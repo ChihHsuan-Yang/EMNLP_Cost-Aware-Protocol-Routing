@@ -23,9 +23,37 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # configure-pages fails with an opaque error when Pages has not been
+      # enabled for the repository, which reads like a broken workflow rather
+      # than a missing one-time setting. Check first and say so plainly.
+      - name: Check that Pages is enabled
+        id: precheck
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          code=$(curl -sS -o /tmp/pages.json -w '%{http_code}' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pages" || true)
+          if [ "$code" = "404" ]; then
+            echo "::error title=GitHub Pages is not enabled::Enable it at Settings -> Pages and set Source to 'GitHub Actions', then re-run this workflow. Nothing else is wrong; docs/site is ready to deploy."
+            exit 1
+          fi
+          echo "Pages API returned $code"
+          cat /tmp/pages.json
+
       - uses: actions/configure-pages@v5
+
+      - name: Verify the site has the files we expect
+        run: |
+          test -f docs/site/index.html || { echo "::error::docs/site/index.html missing"; exit 1; }
+          test -s docs/site/index.html || { echo "::error::docs/site/index.html is empty"; exit 1; }
+          echo "site files:"; find docs/site -type f | sort
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs/site
+
       - id: deployment
         uses: actions/deploy-pages@v4

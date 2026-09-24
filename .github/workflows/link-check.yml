@@ -5,7 +5,7 @@ on:
     branches: [main, public-release]
   pull_request:
   schedule:
-    # Weekly, so a link that rots after release is noticed without a human checking.
+    # Weekly, so a link that rots after release is noticed without a human looking.
     - cron: "37 6 * * 1"
   workflow_dispatch:
 
@@ -23,6 +23,24 @@ jobs:
             --max-retries 3
             --accept 200,206,429
             --exclude-path docs/provenance
+            --exclude-path docs/reproduction/independent_release_audit.md
+            --exclude "^https://provider\.example"
+            --exclude "^https://schema\.org"
+            --exclude "^https://openai\.com/index/gpt-oss-model-card"
+            --exclude "^https://chihhsuan-yang\.github\.io"
             "**/*.md"
             "docs/site/index.html"
           fail: true
+
+# Exclusions, and why each one is here rather than being a link we fixed:
+#
+#   provider.example        - a deliberate placeholder in .env.example and the
+#                             provider config. It must NOT resolve.
+#   schema.org              - a JSON-LD vocabulary identifier, not a hyperlink.
+#   openai.com model card   - live, but returns 403 to datacentre IPs.
+#   chihhsuan-yang.github.io- this project's own Pages site. Excluded only
+#                             because a push to main races its own deployment;
+#                             the site is checked by hand before release.
+#   docs/provenance/,       - provenance records and the audit report quote
+#   independent_release_audit  historical paths and URLs verbatim. Rewriting them
+#                             to satisfy a link checker would falsify the record.
