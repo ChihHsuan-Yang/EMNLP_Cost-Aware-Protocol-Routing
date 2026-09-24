@@ -21,7 +21,7 @@ jobs:
           args: >-
             --no-progress
             --max-retries 3
-            --accept 200,206,429
+            --accept 200,206,429,999
             --exclude-path docs/provenance
             --exclude-path docs/reproduction/independent_release_audit.md
             --exclude "^https://provider\.example"
@@ -38,6 +38,9 @@ jobs:
 #                             provider config. It must NOT resolve.
 #   schema.org              - a JSON-LD vocabulary identifier, not a hyperlink.
 #   openai.com model card   - live, but returns 403 to datacentre IPs.
+#   999 accepted         - LinkedIn returns HTTP 999 to any automated request
+#                           (anti-scraping). The profile resolves normally in a
+#                           browser; 999 means "we refuse bots", not "not found".
 #   chihhsuan-yang.github.io- this project's own Pages site. Excluded only
 #                             because a push to main races its own deployment;
 #                             the site is checked by hand before release.
