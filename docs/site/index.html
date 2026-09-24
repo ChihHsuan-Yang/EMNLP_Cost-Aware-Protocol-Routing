@@ -14,16 +14,16 @@
 <meta property="og:title" content="LLMs Can Predict Failure Risk, But Struggle to Predict Which Collaboration Protocol Pays Off">
 <meta property="og:description" content="EMNLP 2026. Four matched collaboration protocols on every problem, solver held fixed. Failure risk is predictable (0.8847 AUROC); which protocol pays off is not (0.1674 / 0.1041 AUPRC).">
 <meta property="og:url" content="https://chihhsuan-yang.github.io/EMNLP_Cost-Aware-Protocol-Routing/">
-<meta property="og:image" content="https://chihhsuan-yang.github.io/EMNLP_Cost-Aware-Protocol-Routing/assets/img/fig1_main_combined.png">
-<meta property="og:image:width" content="4105">
-<meta property="og:image:height" content="1918">
-<meta property="og:image:alt" content="Two-panel figure: fixed-order-oracle label composition by difficulty tier, and a solve-versus-token-cost frontier for routing policies.">
+<meta property="og:image" content="https://chihhsuan-yang.github.io/EMNLP_Cost-Aware-Protocol-Routing/assets/img/og_card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Title card: LLMs Can Predict Failure Risk, But Struggle to Predict Which Collaboration Protocol Pays Off. EMNLP 2026. 0.8847 AUROC predicting whether the first answer fails; 0.17 and 0.10 AUPRC predicting which protocol pays off.">
 <meta property="og:locale" content="en_US">
 
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="LLMs Can Predict Failure Risk, But Struggle to Predict Which Collaboration Protocol Pays Off">
 <meta name="twitter:description" content="EMNLP 2026. Failure risk is predictable (0.8847 AUROC); protocol-specific collaboration value is not (0.1674 / 0.1041 AUPRC).">
-<meta name="twitter:image" content="https://chihhsuan-yang.github.io/EMNLP_Cost-Aware-Protocol-Routing/assets/img/fig1_main_combined.png">
+<meta name="twitter:image" content="https://chihhsuan-yang.github.io/EMNLP_Cost-Aware-Protocol-Routing/assets/img/og_card.png">
 <meta name="twitter:image:alt" content="Fixed-order-oracle labels by difficulty tier and the solve-versus-cost frontier for routing policies.">
 
 <link rel="icon" href="favicon.ico" sizes="any">
@@ -41,7 +41,7 @@
   "inLanguage": "en",
   "url": "https://chihhsuan-yang.github.io/EMNLP_Cost-Aware-Protocol-Routing/",
   "mainEntityOfPage": "https://chihhsuan-yang.github.io/EMNLP_Cost-Aware-Protocol-Routing/",
-  "image": "https://chihhsuan-yang.github.io/EMNLP_Cost-Aware-Protocol-Routing/assets/img/fig1_main_combined.png",
+  "image": "https://chihhsuan-yang.github.io/EMNLP_Cost-Aware-Protocol-Routing/assets/img/og_card.png",
   "identifier": "arXiv:2608.14927",
   "abstract": "Multi-agent large language model (LLM) systems can improve reasoning by spending more computation, but deployment requires deciding when extra collaboration is worth its cost. We isolate this decision by running every problem under four protocols while holding the solver fixed within each setting: direct solving (Baseline), iterative self-correction (Single), planner-executor-reviewer collaboration (PER), and multi-agent deliberation (Broadcast).",
   "keywords": ["LLM agents", "multi-agent systems", "cost-aware routing", "protocol routing", "calibration"],
@@ -70,7 +70,9 @@
 <nav class="nav" aria-label="Section navigation">
   <div class="nav-inner">
     <a class="nav-brand" href="#top">Protocol&nbsp;Routing</a>
-    <ul class="nav-links">
+    <details class="nav-collapse" open>
+      <summary>Sections</summary>
+      <ul class="nav-links">
       <li><a href="#finding">Finding</a></li>
       <li><a href="#abstract">Abstract</a></li>
       <li><a href="#what-is">What it is</a></li>
@@ -84,6 +86,7 @@
       <li><a href="#cite">Cite</a></li>
       <li><a href="#team">Team</a></li>
     </ul>
+    </details>
     <div class="search-wrap">
       <label class="skip" for="site-search">Search sections of this page</label>
       <input id="site-search" type="search" placeholder="Search this page" autocomplete="off"
@@ -100,10 +103,19 @@
     <h1 class="title">LLMs Can Predict Failure Risk, But Struggle to Predict Which Collaboration Protocol Pays Off<span class="sub">Cost-Aware Protocol Routing Across Reasoning Tasks</span></h1>
 
     <p class="authors">
-      <span class="au">Chih-Hsuan Yang<sup>1</sup></span><span class="sep">, </span><span class="au">Jingyan Jiang<sup>1</sup></span><span class="sep">, </span><span class="au">Cheng-Hau Yang<sup>1</sup></span><span class="sep">, </span><span class="au">Vikram Vasudevan<sup>2</sup></span><span class="sep">, </span><span class="au">Huihuo Zheng<sup>1</sup></span><span class="sep">, </span><span class="au">Venkatram Vishwanath<sup>1</sup></span><span class="sep">, </span><span class="au">Rajeev Thakur<sup>1</sup></span>
+      <span class="au"><a class="aulink" href="https://www.linkedin.com/in/chih-hsuan-yang-isu/" target="_blank" rel="noopener">Chih-Hsuan Yang</a><sup>1</sup></span><span class="sep">, </span><span class="au">Jingyan Jiang<sup>1</sup></span><span class="sep">, </span><span class="au">Cheng-Hau Yang<sup>1</sup></span><span class="sep">, </span><span class="au">Vikram Vasudevan<sup>2</sup></span><span class="sep">, </span><span class="au">Huihuo Zheng<sup>1</sup></span><span class="sep">, </span><span class="au">Venkatram Vishwanath<sup>1</sup></span><span class="sep">, </span><span class="au">Rajeev Thakur<sup>1</sup></span>
     </p>
     <p class="affil"><sup>1</sup>Argonne National Laboratory, Lemont, IL, USA &nbsp;&middot;&nbsp; <sup>2</sup>Oregon State University, Corvallis, OR, USA</p>
     <p class="affil">Contact: <a class="contact" href="mailto:bellayang@anl.gov">bellayang@anl.gov</a></p>
+    <!-- Author profile links (LinkedIn).
+         Chih-Hsuan Yang is linked. The other six are plain text until each
+         author's own profile URL is confirmed: several of these names are
+         shared by other published researchers, and linking the wrong person
+         misattributes their work. To add one, wrap the name inside its
+         <span class="au"> as:
+           <a class="aulink" href="https://www.linkedin.com/in/SLUG/"
+              target="_blank" rel="noopener">Name</a>
+         Styling is already in place. -->
 
     <div class="btnrow">
       <a class="btn primary" href="https://arxiv.org/pdf/2608.14927"><span class="gl" aria-hidden="true">&#9782;</span> Paper (PDF)</a>
@@ -125,8 +137,8 @@
   <p class="lede" style="margin-top:18px">Concretely: a post-answer, pre-collaboration <code>gpt-oss-120b</code> probe ranks Baseline failures at <strong>0.8847 AUROC</strong> (4,151 parseable of 4,181; 95% CI [0.8732, 0.8955]). The same score stays useful for &ldquo;does any collaboration help&rdquo; (<strong>0.7683 AUPRC</strong>), but is much weaker for PER-specific (<strong>0.1674 AUPRC</strong>) and Broadcast-specific (<strong>0.1041 AUPRC</strong>) value. Confidence supports initial escalation; protocol-specific cost-aware routing remains unresolved.</p>
 
   <figure>
-    <img src="assets/img/fig1_main_combined.png" width="4105" height="1918"
-         alt="Two-panel overview figure. Left panel: stacked bars showing the fixed-order-oracle label composition across difficulty tiers, with Baseline, Single, PER, Broadcast and None shares summing to one within each tier; the Baseline share shrinks and the costlier-protocol and None shares grow as difficulty rises. Right panel: a solve-rate versus average-token-cost frontier in which the self-confidence gate sits up and to the left of the frozen large-language-model routers, which buy extra solves with substantially more tokens.">
+    <a class="figzoom" href="assets/img/fig1_main_combined.png" target="_blank" rel="noopener" title="Open the full-resolution figure (4105×1918) in a new tab"><img src="assets/img/fig1_main_combined.png" width="4105" height="1918"
+         alt="Two-panel overview figure. Left panel: stacked bars showing the fixed-order-oracle label composition across difficulty tiers, with Baseline, Single, PER, Broadcast and None shares summing to one within each tier; the Baseline share shrinks and the costlier-protocol and None shares grow as difficulty rises. Right panel: a solve-rate versus average-token-cost frontier in which the self-confidence gate sits up and to the left of the frozen large-language-model routers, which buy extra solves with substantially more tokens." loading="eager" decoding="async"></a>
     <figcaption><b>Overview.</b> (a) Fixed-order-oracle labels by difficulty tier; fractions sum to 1 within each tier. (b) Solve&ndash;cost frontier relative to Tier-majority; upper-left is better. The self-confidence gate improves the low-cost frontier, while larger frozen routers buy additional solves through substantially more token use. Figure&nbsp;1 of the paper (<code>fig1_main_combined</code>).</figcaption>
   </figure>
 </section>
@@ -250,13 +262,13 @@
   <p>After <code>gpt-oss-120b</code> produces its Baseline answer, we ask it for P(Baseline correct). The probe sees only the problem, the allowed metadata, and its own Baseline <em>final answer</em>. It sees no reasoning trace, no gold answer, no correctness label, no oracle label, and no collaboration outcome. Failure risk is then 1&nbsp;&minus;&nbsp;P(correct).</p>
 
   <figure>
-    <img src="assets/img/fig3a_reliability.png" width="1849" height="1609"
-         alt="Reliability diagram comparing self-reported single-pass confidence on the horizontal axis with empirical Baseline success rate on the vertical axis, plotted against a diagonal line of perfect calibration.">
+    <a class="figzoom" href="assets/img/fig3a_reliability.png" target="_blank" rel="noopener" title="Open the full-resolution figure (1849×1609) in a new tab"><img src="assets/img/fig3a_reliability.png" width="1849" height="1609"
+         alt="Reliability diagram comparing self-reported single-pass confidence on the horizontal axis with empirical Baseline success rate on the vertical axis, plotted against a diagonal line of perfect calibration." loading="lazy" decoding="async"></a>
     <figcaption><b>Self-assessment reliability.</b> Self-reported single-pass confidence compared with empirical Baseline success, for the cleaned pre-answer confidence probe (<code>fig3a_reliability</code>).</figcaption>
   </figure>
   <figure>
-    <img src="assets/img/fig3b_oracle_by_confidence.png" width="1946" height="1927"
-         alt="Stacked bar chart showing the distribution of fixed-order-oracle routing labels within each bin of self-reported confidence; the Baseline share dominates high-confidence bins while costlier-protocol and None labels concentrate in low-confidence bins.">
+    <a class="figzoom" href="assets/img/fig3b_oracle_by_confidence.png" target="_blank" rel="noopener" title="Open the full-resolution figure (1946×1927) in a new tab"><img src="assets/img/fig3b_oracle_by_confidence.png" width="1946" height="1927"
+         alt="Stacked bar chart showing the distribution of fixed-order-oracle routing labels within each bin of self-reported confidence; the Baseline share dominates high-confidence bins while costlier-protocol and None labels concentrate in low-confidence bins." loading="lazy" decoding="async"></a>
     <figcaption><b>Oracle labels by confidence bin.</b> Fixed-order-oracle routing labels within confidence bins (<code>fig3b_oracle_by_confidence</code>). Confidence separates &ldquo;Baseline is enough&rdquo; from &ldquo;something more is needed&rdquo;, but within the low-confidence region the costlier labels remain mixed &mdash; which is the selection problem the paper leaves open.</figcaption>
   </figure>
 </section>
@@ -310,8 +322,8 @@
   </div>
 
   <figure>
-    <img src="assets/img/fig2_matched_benchmarks.png" width="3961" height="1328"
-         alt="Heatmap grid of matched solve and coverage percentages. Rows are the ten solver-by-condition settings; columns are the Baseline, Single, PER and Broadcast protocols plus the retrospective fixed-order oracle. Cell hue identifies the protocol and deeper tint indicates higher solve or coverage, with the strongest deployable fixed protocol in each row outlined.">
+    <a class="figzoom" href="assets/img/fig2_matched_benchmarks.png" target="_blank" rel="noopener" title="Open the full-resolution figure (3961×1328) in a new tab"><img src="assets/img/fig2_matched_benchmarks.png" width="3961" height="1328"
+         alt="Heatmap grid of matched solve and coverage percentages. Rows are the ten solver-by-condition settings; columns are the Baseline, Single, PER and Broadcast protocols plus the retrospective fixed-order oracle. Cell hue identifies the protocol and deeper tint indicates higher solve or coverage, with the strongest deployable fixed protocol in each row outlined." loading="lazy" decoding="async"></a>
     <figcaption><b>Matched breadth.</b> Solve/coverage percentages across four benchmarks (five prompt conditions), four protocols, and two solver families. Cell hue identifies the protocol; deeper tint indicates higher solve/coverage. The outlined cell is the strongest deployable fixed protocol in each row. Oracle is retrospective fixed-order coverage computed from the same four realized outcomes. Unlike Table&nbsp;2, this figure uses all matched problems available in each setting (<code>fig2_matched_benchmarks</code>).</figcaption>
   </figure>
 
@@ -431,6 +443,12 @@ make test</code></pre>
   <h2 id="h-reproduce"><span class="kicker">Run it yourself</span>Reproduce the paper</h2>
   <p>There are three distinct entry points, ordered by what they cost you. Start at the top; each one is a superset of the effort of the one above it.</p>
 
+  <p class="tnote"><strong>All three assume you have done this first:</strong></p>
+  <pre><code>git clone https://github.com/ChihHsuan-Yang/EMNLP_Cost-Aware-Protocol-Routing.git
+cd EMNLP_Cost-Aware-Protocol-Routing
+make setup</code></pre>
+  <p class="tnote"><code>make setup</code> creates a local virtual environment and installs the package into it; the other targets use it automatically.</p>
+
   <div class="repro">
     <article class="rcard">
       <p class="rtag">Entry point 1</p>
@@ -455,7 +473,14 @@ make test</code></pre>
       <h3>Full protocol rerun</h3>
       <p class="rcost">Needs model endpoints &middot; substantial compute</p>
       <p>Reruns Baseline, Single, PER and Broadcast to generate fresh traces and outcomes. Requires a compatible OpenAI-compatible endpoint serving the solver models, and substantial compute &mdash; the matched design executes every protocol on every problem.</p>
-      <p class="tnote" style="margin-top:0">Command syntax depends on your endpoint configuration; <strong>see the repository for the exact, tested commands.</strong></p>
+      <p>Before spending anything, exercise the whole four-protocol pipeline offline against the bundled mock backend &mdash; no endpoint, no cost:</p>
+      <pre><code>python -m protocol_routing_exec.run_protocol \
+  --dataset-config  configs/datasets/fixture_tiny_math.yaml \
+  --model-config    configs/models/gpt_oss_120b.yaml \
+  --protocol-config configs/protocols/baseline.yaml \
+  --provider-config configs/providers/mock.yaml \
+  --limit 4 --output-dir outputs/mock_demo</code></pre>
+      <p class="tnote" style="margin-top:0">Swap <code>configs/providers/mock.yaml</code> for <code>configs/providers/openai_compatible.example.yaml</code> and set <code>INFERENCE_BASE_URL</code> and <code>INFERENCE_API_KEY</code> to run against a real endpoint. Repeat for each of the four protocol configs. <strong>See the repository for the full, tested workflow.</strong></p>
       <p><a href="https://github.com/ChihHsuan-Yang/EMNLP_Cost-Aware-Protocol-Routing#readme">Protocol execution instructions in the repository &rarr;</a></p>
     </article>
   </div>
@@ -514,8 +539,10 @@ make test</code></pre>
 
 <section id="team" class="wrap" aria-labelledby="h-team">
   <h2 id="h-team"><span class="kicker">Authors</span>Team and contact</h2>
+  <!-- LinkedIn profiles. Add one by wrapping the name in .nm with
+       <a class="aulink" href="https://www.linkedin.com/in/SLUG/" target="_blank" rel="noopener">. -->
   <ul class="team">
-    <li><span class="nm">Chih-Hsuan Yang</span><span class="af">Argonne National Laboratory</span></li>
+    <li><span class="nm"><a class="aulink" href="https://www.linkedin.com/in/chih-hsuan-yang-isu/" target="_blank" rel="noopener">Chih-Hsuan Yang</a></span><span class="af">Argonne National Laboratory</span></li>
     <li><span class="nm">Jingyan Jiang</span><span class="af">Argonne National Laboratory</span></li>
     <li><span class="nm">Cheng-Hau Yang</span><span class="af">Argonne National Laboratory</span></li>
     <li><span class="nm">Vikram Vasudevan</span><span class="af">Oregon State University</span></li>

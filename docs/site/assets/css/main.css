@@ -301,6 +301,13 @@ footer.site {
 footer.site p { max-width: 80ch; margin-bottom: 8px; }
 .totop { font-size: .86rem; }
 
+
+/* The section list is wrapped in <details> so phones can collapse it. On wider
+   screens that wrapper must be inert: hide the toggle and always show the list,
+   regardless of the element's open state. */
+.nav-collapse > summary { display: none; }
+.nav-collapse .nav-links { display: flex; }
+
 /* ---------- narrow screens ---------- */
 @media (max-width: 720px) {
   body { font-size: 15.5px; }
@@ -309,6 +316,41 @@ footer.site p { max-width: 80ch; margin-bottom: 8px; }
   main section { padding-block: 30px; }
   .nav-inner { padding-block: 8px; gap: 8px; }
   .nav-brand { font-size: .72rem; }
+
+  /* On a phone the nav was 12 links plus a full-width search box, which wrapped
+     to two rows and consumed a large share of the first screen before the paper
+     title. Collapse it behind a toggle: the brand and the toggle stay, the rest
+     opens on demand. The <details> element gives us this with no JavaScript, so
+     it still works if the script fails to load. */
+  .nav-inner { flex-wrap: wrap; align-items: center; }
+  /* The toggle sits beside the brand on one row. Only when it is opened does
+     the link list take vertical space, so the closed nav is a single short bar
+     and the paper title stays near the top of the first screen. */
+  .nav-collapse { display: contents; }
+  .nav-collapse > summary { margin-left: auto; }
+  .nav-collapse .nav-links { flex: 1 1 100%; }
+  .nav-collapse > summary {
+    display: block;          /* overrides the desktop rule that hides the toggle */
+    list-style: none;
+    cursor: pointer;
+    padding: 6px 2px;
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--accent, #4C78A8);
+  }
+  .nav-collapse > summary::-webkit-details-marker { display: none; }
+  .nav-collapse > summary::after { content: " \25BE"; }
+  .nav-collapse[open] > summary::after { content: " \25B4"; }
+  .nav-collapse:not([open]) .nav-links { display: none; }
+  .nav-collapse[open] .nav-links { display: flex; }
+  .nav-collapse .nav-links {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    overflow: visible;
+    padding-block: 4px 8px;
+  }
+  .nav-collapse .nav-links a { display: block; padding: 7px 2px; }
   .search-wrap { order: 3; flex: 1 1 100%; }
   #site-search { width: 100%; }
   .search-results { right: auto; left: 0; width: 100%; }
@@ -344,4 +386,81 @@ footer.site p { max-width: 80ch; margin-bottom: 8px; }
   .kv { grid-template-columns: 1fr; gap: 0 0; }
   .kv dt { margin-top: 10px; font-size: .82rem; letter-spacing: .04em; text-transform: uppercase; }
   .kv dd { margin-bottom: 2px; }
+}
+
+/* ---------------------------------------------------------------------------
+   Click-to-zoom figures.
+
+   The paper's figures are exported at print resolution (fig2 is 3961x1328, a
+   10x5 heatmap with in-cell percentages). At the ~1040px content width they
+   downscale almost 4x and the in-cell numbers become unreadable. Rather than
+   re-render and risk changing a published value, each figure links to its own
+   full-resolution file so a reader can open it at native size.
+   --------------------------------------------------------------------------- */
+a.figzoom {
+  display: block;
+  position: relative;
+  border-radius: 6px;
+  outline-offset: 3px;
+}
+a.figzoom img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+}
+a.figzoom::after {
+  content: "Open full size \2197";
+  position: absolute;
+  right: .55rem;
+  bottom: .55rem;
+  padding: .3rem .55rem;
+  font-size: .78rem;
+  line-height: 1;
+  border-radius: 4px;
+  background: rgba(22, 33, 58, .82);
+  color: #fff;
+  opacity: 0;
+  transition: opacity .15s ease-in-out;
+  pointer-events: none;
+}
+a.figzoom:hover::after,
+a.figzoom:focus-visible::after { opacity: 1; }
+
+/* Keep the affordance discoverable without a pointer, and for anyone who has
+   asked for reduced motion (where a hover transition may not be noticed). */
+@media (hover: none) {
+  a.figzoom::after { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  a.figzoom::after { transition: none; }
+}
+
+/* Author profile links. Styling is ready so adding one is a single <a> tag;
+   see the comment beside the author list in index.html. */
+.authors a.aulink { color: inherit; text-decoration: none; border-bottom: 1px solid var(--rule, #d9dfe8); }
+.authors a.aulink:hover,
+.authors a.aulink:focus-visible { color: var(--accent, #4C78A8); border-bottom-color: currentColor; }
+
+/* Author links inside the Team list share the hero link styling. */
+.team a.aulink { color: inherit; text-decoration: none; border-bottom: 1px solid var(--rule, #d9dfe8); }
+.team a.aulink:hover,
+.team a.aulink:focus-visible { color: var(--accent, #4C78A8); border-bottom-color: currentColor; }
+
+/* The desktop section strip scrolls horizontally when the window is too narrow
+   for all 12 links. A CSS mask was tried and removed: it dimmed the last link
+   even when everything fit, which looked like a rendering fault rather than an
+   affordance. Instead, let the strip shrink less aggressively and give the
+   scrollbar a visible, thin track so the overflow is self-evident. */
+@media (min-width: 721px) {
+  .nav-links {
+    flex: 1 1 auto;
+    scrollbar-width: thin;
+    scroll-padding-inline: 8px;
+  }
+  .nav-links::-webkit-scrollbar { height: 4px; }
+  .nav-links::-webkit-scrollbar-thumb {
+    background: var(--rule, #d9dfe8);
+    border-radius: 4px;
+  }
 }

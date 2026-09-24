@@ -11,7 +11,7 @@ version: trackb-fixture-v1
 domain: synthetic
 
 loader: omni-math          # same schema and same answer_number-first priority
-path: fixtures/tiny_math.jsonl
+path: tests/fixtures/tiny_math.jsonl
 expected_rows: 6
 
 obtain:

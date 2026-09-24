@@ -1,14 +1,23 @@
-# TODO
+# Known limitations and open items
 
-Scope note: this file lists work that is *not* done. Completed work is not
-recorded here — see `CHANGELOG.md` and `docs/provenance/` for what exists.
+> **No release blockers are outstanding.** Everything the paper claims is
+> released and independently verified; an external auditor reproduced the
+> headline result, both principal tables, and all six held-out router rows from
+> the released data. This file is the honest list of what is *not* done, so that
+> a reader can judge the artifact's edges rather than discover them. It is not a
+> defect report.
 
-## Release blockers
+Completed work is not recorded here — see `CHANGELOG.md` for what exists and
+`docs/provenance/` for how each number was verified.
 
-*None outstanding at the time of publication.* Items that were blocking during
-assembly (excluding the NonCommercial benchmark from every artifact; recovering
-the per-problem post-answer probe predictions; resolving the two OmniMath
-scoring passes) were resolved and verified; see `docs/provenance/`.
+## Resolved during assembly
+
+Recorded so the trail is visible, not because anything is pending: the
+NonCommercial benchmark was excluded from every artifact and the exclusion was
+verified; the per-problem post-answer probe predictions were recovered and now
+reproduce the headline exactly; and the two OmniMath scoring passes were
+reconciled to 3 problems, with the camera-ready scoring shipped. See
+`docs/provenance/`.
 
 ## Near-term
 

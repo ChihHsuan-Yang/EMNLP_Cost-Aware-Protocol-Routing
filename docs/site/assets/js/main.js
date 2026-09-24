@@ -126,3 +126,36 @@
     if (!out.contains(e.target) && e.target !== input) { out.hidden = true; }
   });
 })();
+
+/* ---------------------------------------------------------------------------
+   Mobile section nav.
+
+   The list of sections is wrapped in <details class="nav-collapse">. CSS hides
+   the toggle above 720px and always shows the list there, so desktop is
+   unaffected. Below 720px the toggle appears; we start it CLOSED so the nav
+   does not eat the first screen, and close it again after a jump so the reader
+   lands on the section rather than on a full-height menu.
+
+   This runs after the markup is parsed. If the script never loads, the element
+   stays open and the nav degrades to the previous (working, if tall) layout —
+   a visible menu is a safer failure than a hidden one.
+   --------------------------------------------------------------------------- */
+(function () {
+  var nav = document.querySelector('.nav-collapse');
+  if (!nav) return;
+  var narrow = window.matchMedia('(max-width: 720px)');
+
+  function sync(e) {
+    // Only force a state when crossing the breakpoint, so a reader who opened
+    // the menu deliberately is not overridden while they are using it.
+    nav.open = !(e.matches);
+  }
+  sync(narrow);
+  if (narrow.addEventListener) narrow.addEventListener('change', sync);
+  else if (narrow.addListener) narrow.addListener(sync);
+
+  nav.addEventListener('click', function (ev) {
+    var a = ev.target.closest && ev.target.closest('a');
+    if (a && narrow.matches) nav.open = false;
+  });
+})();
