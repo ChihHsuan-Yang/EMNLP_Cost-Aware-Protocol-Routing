@@ -1,16 +1,50 @@
 #!/usr/bin/env python3
-"""Regression tests for behaviours whose loss would change the science.
+"""Execution-fidelity checks for behaviours whose loss would change the science.
 
-Run:  python3 tests/test_fidelity.py
-No pytest required.
+Standalone script, NOT a pytest module: it exits with a status code, so it must
+not live under tests/ where pytest would collect it and die on the sys.exit at
+import time.
+
+    python3 scripts/checks/check_execution_fidelity.py     # from anywhere
+
+Exit 0 = all checks passed, 1 = at least one failed.
 """
 
 import os
 import sys
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(HERE)
-sys.path.insert(0, os.path.join(ROOT, "src"))
+
+def _add_package_to_path():
+    """Locate the repo root from this file and put its src/ on sys.path.
+
+    Walks upward from this file looking for the package directory, so the
+    script keeps working if it is moved again or invoked from any working
+    directory. Falls back to an already-importable package (e.g. an installed
+    or PYTHONPATH-provided one) rather than guessing.
+    """
+    here = os.path.dirname(os.path.abspath(__file__))
+    probe = here
+    for _ in range(6):
+        candidate = os.path.join(probe, "src")
+        if os.path.isdir(os.path.join(candidate, "protocol_routing_exec")):
+            if candidate not in sys.path:
+                sys.path.insert(0, candidate)
+            return candidate
+        parent = os.path.dirname(probe)
+        if parent == probe:
+            break
+        probe = parent
+    try:
+        import protocol_routing_exec  # noqa: F401
+        return "(already importable)"
+    except ImportError:
+        raise SystemExit(
+            "Cannot locate the protocol_routing_exec package. Expected to find "
+            "<repo>/src/protocol_routing_exec by walking up from %s. Run from a "
+            "checkout, or put src/ on PYTHONPATH." % here)
+
+
+PACKAGE_PATH = _add_package_to_path()
 
 from protocol_routing_exec import parsing as P            # noqa: E402
 from protocol_routing_exec.evaluator import LlmEvaluator  # noqa: E402
@@ -28,6 +62,7 @@ def check(name, condition, detail=""):
         FAILURES.append(name)
 
 
+print("package resolved from: %s" % PACKAGE_PATH)
 print("\n[1] extract_boxed returns the LAST well-formed box, brace-balanced")
 check("nested braces survive",
       P.extract_boxed(r"\boxed{\frac{1}{2}}") == r"\frac{1}{2}")

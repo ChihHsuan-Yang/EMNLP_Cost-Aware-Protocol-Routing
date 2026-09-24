@@ -60,13 +60,182 @@
 # All prompt strings below are copied VERBATIM from the source config named in
 # the provenance block. Placeholders use ${name} and are substituted with
 # string.Template.safe_substitute; do not rename them.
+#
+# SCHEMA. This file carries the release-wide protocol-config schema:
+#   protocol_id  display_name  roles  turns  stopping_rule  retry_policy
+#   context_and_memory  final_answer_selection  evaluator_invocation
+#   token_accounting
+# plus a provenance: block naming the source config it was derived from.
+# Anything that could not be established from source is recorded as
+# `unknown: true` with a comment naming exactly where it was looked for. An
+# honest gap is correct; a fabricated value is a release blocker.
+#
+# FOUR THINGS THAT ARE MISLEADING ON SIGHT, each verified against source:
+#   1. `llm_type: gpt-3.5-turbo` in the original configs is a REGISTRY KEY,
+#      not the model. It is popped before construction
+#      (agentverse/initialization.py:20-23) and selects one class that is
+#      registered under gpt-35-turbo / gpt-3.5-turbo / gpt-4 / vllm / local
+#      (openai.py:982-986). The wire model is the separate `model:` field.
+#      No GPT-3.5 was ever called.
+#   2. Broadcast's `memory_mode: summary_plus_recent` NEVER SUMMARISES in
+#      these runs -- see context_and_memory.summary_plus_recent_caveat.
+#   3. A FAILING PER outer round submits to the evaluator TWICE -- see
+#      turns.two_submissions_caveat.
+#   4. Per-problem token counts from runs predating commit b4a2db6ee are
+#      CUMULATIVE, not per-problem -- see
+#      token_accounting.upstream_bug_caveat.
 # ===========================================================================
 
 protocol_id: broadcast
+display_name: Broadcast
 name: broadcast-deliberation
 prompt_version: omni_math_v1
 evaluator_model_config: gpt_oss_120b.yaml
 max_rounds: 3
+turns:
+  max_rounds: 3
+  discussion_rounds: 4
+  approval_rounds: 2
+  peers: 3
+  structure: 'Per discussion turn: EVERY peer polls, the highest scorer speaks, peers at or above speak_threshold
+    that did not win record a private deferred note. When a candidate exists, up to approval_rounds
+    unanimous-approval votes run, each polling every peer.'
+  actor_calls_per_problem: 4 .. 120
+  judge_calls_per_problem: 1 .. 6
+  cost_driver: The poll goes to every peer on every turn even though only one speaks, so peer count
+    multiplies token cost without multiplying public output.
+stopping_rule:
+  approval_policy: unanimous
+  rule: Consensus is reached when EVERY peer approves the current candidate in one approval round; that
+    breaks out of the discussion loop. Otherwise the candidate is replaced by the majority revision
+    and the next approval round runs.
+  approval_source: rules/broadcast_deliberation.py:741-746 (_approval_reached)
+  outer_rule: Stop on evaluator PASS, else until max_rounds.
+  no_candidate_fallback: If no candidate emerged from any discussion turn, a final proposal round runs
+    and the highest-confidence proposal wins.
+retry_policy:
+  role_call_max_retry: 10
+  role_call_max_retry_source: 'configs/paper/broadcast_hint_llm/config.yaml -- `max_retry: 10` on EVERY
+    agent including the evaluator. Upstream this is the number of times an agent''s generate+parse is
+    retried before the turn is abandoned (agentverse/agents/tasksolving_agent/evaluator.py:85-100).'
+  on_role_retry_exhausted: Upstream emits score 0 / empty advice rather than raising, so an agent that
+    never parses is recorded as a wrong answer, NOT as an error. Reproduced; this port additionally
+    sets judge_unparseable true so the case is auditable.
+  transport_max_retries: 7
+  transport_backoff: exponential with full jitter, cap 60s
+  transport_retryable: HTTP 429 and 5xx, connection errors, timeouts. A non-429 4xx fails immediately.
+  transport_source: agentverse/llms/openai.py:169-170 (_RATE_LIMIT_MAX_ATTEMPTS=7, _RATE_LIMIT_BACKOFF_CAP=60).
+    Configurable per provider under configs/providers/*.yaml transport.max_retries.
+  transport_simplification: 'SIMPLIFICATION: upstream kept a SECOND, shorter budget for transient connection
+    errors (4 attempts, 8s cap, openai.py:171-172). This port uses one budget for both classes. Affects
+    resilience, not content.'
+  timeout_seconds: 600.0
+  timeout_source: agentverse/llms/openai.py:1273 (async client timeout=600.0). NOTE the upstream SYNC
+    path set no explicit timeout and stacked SDK-internal retries beneath its own; this port always
+    sets both explicitly.
+context_and_memory:
+  question_scoped: true
+  scope_note: Both ledgers are created fresh per problem and cleared between problems. Neither ever
+    contains the gold answer -- only the model's own rejected answers and the judge's non-leaking hints.
+  memory_mode: summary_plus_recent
+  recent_history_window: 5
+  two_lanes: Each peer has a PUBLIC lane (the shared broadcast channel) and a PRIVATE lane (its own
+    deferred notes, never broadcast).
+  summary_plus_recent_caveat: 'MISLEADING ON SIGHT. Despite the name, NO SUMMARY IS EVER PRODUCED in
+    the paper''s broadcast runs. to_string_summary_last_n only prepends a ''Summary of earlier conversation''
+    block when self.summary is non-empty (memory/chat_history.py:285-306), and self.summary is only
+    ever written under has_summary (chat_history.py:492, gated at :89). The broadcast config gives its
+    peers a bare `memory: {memory_type: chat_history}` with NO has_summary, so has_summary stays at
+    its False default (chat_history.py:21) and the summary block is always the empty string. Verified
+    by replicating the upstream code path on its real constants. SECOND CONSEQUENCE: with no summary,
+    the visible window is set by summary_keep_recent_token_budget (default 200, chat_history.py:25)
+    via _recent_tail_start_index, NOT by recent_history_window -- which is used only as a fallback when
+    that tail comes back empty. So the peers'' effective context is a ~200-token tail, and the configured
+    recent_history_window of 5 is largely inert.'
+  speak_threshold: 65
+  deferred_notes: A peer polling at or above speak_threshold that does not win the turn writes a private
+    note to itself, visible only in its own later prompts.
+  reviewer_feedback_mode: hint
+  gemma_variant_note: The Gemma bundle uses recent_history_window 3 instead of 5. Given the caveat above,
+    that difference is mostly inert too.
+  simplification: 'SIMPLIFICATION, HIGHEST-RISK IN THIS PORT: upstream attached a rolling LLM-generated
+    summary to some agents'' chat history (has_summary, 300-token summary refreshed every 3 messages).
+    This port passes prior text explicitly through prompt placeholders and runs NO summariser. On long
+    trajectories the agents therefore see materially different context, and the summariser''s own model
+    calls are absent from the token totals.'
+  prompt_token_budget_trimming: 'SIMPLIFICATION: upstream trimmed advice/plan/solution to per-section
+    token budgets with head-tail truncation. Not implemented. Long runs will build larger prompts than
+    the original.'
+final_answer_selection:
+  rule: The candidate surviving the approval loop is wrapped in a structured final output block (`Broadcast-Deliberation
+    Final Output` with consensus status, candidate source, and `Final Answer For Evaluator:`) and that
+    block is submitted.
+  candidate_selection_policy: majority_revision
+  candidate_selection_detail: 'When an approval round fails and peers proposed revisions, the replacement
+    is the MOST COMMON revision (Counter.most_common). ''latest_revision'' and ''first_revision'' are
+    the other supported policies; the paper used majority_revision. Source: rules/broadcast_deliberation.py:769-779
+    (_choose_candidate).'
+  poll_candidate_tiebreak: Within a discussion turn the spoken candidate wins; failing that, the highest-scoring
+    poll candidate is promoted.
+evaluator_invocation:
+  type: llm
+  implementation: agentverse/environments/tasksolving_env/rules/evaluator/per.py::LlmPerEvaluator (registered
+    as 'llm', 'agent', 'openai')
+  judge_model: openai/gpt-oss-120b
+  judge_model_config: gpt_oss_120b.yaml
+  judge_model_is_fixed_across_solver_families: true
+  judge_model_evidence: 'Verified by parsing all 73 config.yaml files under configs/paper/: ZERO evaluator
+    agents use any model other than openai/gpt-oss-120b. This holds for the Gemma, Llama and E4B solver
+    bundles too, so the second-family comparison changes the reasoning actors without changing the answer-comparison
+    mechanism.'
+  box_gate:
+    enabled: true
+    behaviour: 'Runs BEFORE any judge call. If the submitted candidate contains no \boxed{...}, the
+      judge is NEVER CALLED: the item is recorded FAIL with direct_protocol_fail true and reason missing_boxed_final_answer,
+      at zero judge cost.'
+    source: rules/evaluator/per.py:179-202 (box_required = True)
+    consequence: A pure formatting failure is indistinguishable in the outcome from a wrong answer,
+      and is cheaper.
+  calls_per_evaluation: 1 on PASS, 2 on FAIL
+  hint_call:
+    include_hint_on_fail: true
+    behaviour: 'On FAIL a SECOND judge call generates the repair hint, with the correctness verdict
+      explicitly PINNED so the second call cannot overturn the first. Source: rules/evaluator/per.py:534-571.'
+  verdict_parsing:
+    parser: mgsm-evaluator
+    dimensions_read:
+    - Correctness
+    caveat: 'MISLEADING ON SIGHT. Every judge prompt demands a `Verdict: PASS|FAIL` line, but the runtime
+      parser reads ONLY `Correctness:\s*(\d)` (output_parser.py:515-546). The Verdict line is decorative
+      at run time and is consumed only by offline analysis, and only as a fallback when Correctness
+      is absent. On a contradiction, Correctness wins.'
+    single_digit_quirk: 'The regex captures ONE digit, so `Correctness: 10` parses as 1 (True). Preserved.'
+  reference_solution_visibility: The gold answer and, where present, the official solution are given
+    to the JUDGE ONLY. The judge is instructed not to reveal, quote or restate them, and the returned
+    hint is required to be non-leaking. No actor prompt ever contains the gold answer.
+token_accounting:
+  counted_from: 'the server''s `usage` object on each response: prompt_tokens, completion_tokens, total_tokens'
+  source: agentverse/llms/openai.py:1167-1169 and :1433-1435 (collect_metrics); per-instance accumulators
+    at :994-996
+  granularity: summed per ROLE and in total; written to token_counts.json in every run directory
+  reset_between_problems: true
+  reset_source: agentverse/tasksolving.py:320-321 calls environment.reset_token_counters() per example
+    (agentverse/environments/base.py:94-126).
+  upstream_bug_fixed_at_commit: b4a2db6ee53811b1a578972421da6a9cc2a18286
+  upstream_bug_caveat: 'MISLEADING ON SIGHT. Before commit b4a2db6ee ("Fix per-example resource accounting:
+    reset LLM token counters per example", 2026-07-24), the benchmark loop reused ONE TaskSolving object
+    across examples while the LLM counters only ever accumulated with +=. MetricsCollector.snapshot_agent_tokens
+    therefore recorded CUMULATIVE within-worker totals as if they were per-problem. Any per-problem
+    cost figure taken from a run predating that commit is inflated and monotonically increasing within
+    a shard. Verified: commit exists in the AgentVerse repository, and the fix is documented in the
+    reset_token_counters docstring at environments/base.py:96-105.'
+  http_attempts_recorded: true
+  http_attempts_rationale: DEVIATION FROM UPSTREAM, deliberate. Upstream increments total_request_count
+    once per LOGICAL call (openai.py:1141 etc), so HTTP retries are invisible and a cost estimate built
+    on it understates a rate-limited run. This port records BOTH `calls` and `http_attempts`.
+  known_undercount: This port omits the rolling-summary model calls (see context_and_memory.simplification),
+    so for PER its token totals are an UNDERCOUNT relative to the original engine. Do not compare token
+    counts from this port against the paper's.
 rule:
   approval_policy: unanimous
   approval_rounds: 2
@@ -197,3 +366,7 @@ provenance:
   gemma_variant_differences: configs/paper/different_model_family/*_gemma4_31b_eval_oss120b/config.yaml
     uses IDENTICAL prompts and rule structure but actor max_tokens 2048 instead of 4096, recent_history_window
     3 instead of 5. The evaluator stays gpt-oss-120b at max_tokens 4096 in every variant.
+  llm_type_caveat: 'The source configs set `llm_type: gpt-3.5-turbo` on every agent. That is a REGISTRY
+    KEY selecting the OpenAIChat class, popped before construction (agentverse/initialization.py:20-23);
+    the class is registered under five aliases (openai.py:982-986). The wire model is the separate `model:`
+    field. No GPT-3.5 was ever called.'
