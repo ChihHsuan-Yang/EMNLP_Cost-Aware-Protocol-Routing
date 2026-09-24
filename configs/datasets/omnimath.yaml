@@ -1,0 +1,88 @@
+# ===========================================================================
+# DATASET: Omni-MATH-2, filtered exact-answer evaluation slice
+# ===========================================================================
+# The primary benchmark of the paper. Competition mathematics with
+# difficulty tiers 1-10.
+#
+# NO PROBLEM TEXT SHIPS WITH THIS PACKAGE. Build the slice yourself with the
+# recipe below, then point `path` at the result.
+# ===========================================================================
+
+dataset_id: omnimath
+display_name: Omni-MATH-2 (filtered)
+version: "local-build-4181"
+domain: math
+
+loader: omni-math          # dataloader/omni_math.py::OmniMathLoader
+path: ${DATA_ROOT}/omni-math-2-filtered/all.jsonl
+expected_rows: 4181        # verified: wc -l on the built slice
+
+obtain:
+  upstream_url: https://huggingface.co/datasets/martheballon/Omni-MATH-2
+  pinned_revision:
+    unknown: true
+    comment: >-
+      NO upstream revision was pinned for Omni-MATH-2. The local build was made
+      from a downloaded copy of Omni-Math-2.jsonl; the release registry records
+      the version only as "filtered exact-answer evaluation slice (local build,
+      4181 problems)". Searched: AgentVerse/data/omni-math-2-filtered/
+      {summary.json,raw/}, scripts/preprocess_omni_math.py, configs/paper/
+      README.md, and /tmp/emnlp_release/hf_dataset_staging/registry/
+      benchmarks.csv. No commit hash or dataset revision exists in any of them.
+      Verify your build with dataset_fingerprint in the run manifest instead.
+  build_command: |
+    # From the AgentVerse repository root, with the upstream file placed at
+    #   data/omni-math-2-filtered/raw/Omni-Math-2.jsonl
+    python scripts/preprocess_omni_math.py
+
+filtering:
+  rule: >-
+    A record is DROPPED when its upstream `tags` field is truthy
+    (scripts/preprocess_omni_math.py:42: `if record.get("tags"): return None`).
+    This removes problems whose answer is not a clean exact answer, leaving the
+    4181-problem exact-answer evaluation slice. No other filter is applied.
+  difficulty_tier: >-
+    tier = max(1, min(10, round(float(difficulty)))) -- the upstream file stores
+    averaged floating-point difficulty, binned to 10 integer tiers.
+  tier_counts:
+    "1": 116
+    "2": 517
+    "3": 20
+    "4": 1106
+    "5": 1078
+    "6": 497
+    "7": 358
+    "8": 328
+    "9": 146
+    "10": 15
+
+# How the on-disk row maps to the runner's internal schema. The ORDER of each
+# list is the priority order and it matters.
+field_mapping:
+  input:              [question, problem]
+  answer:             [answer_number, answer, label]
+  reference_solution: [equation_solution, equation_answer, solution]
+  metadata_passthrough:
+    [dataset_name, source, difficulty, difficulty_tier, domain, judge_type,
+     raw_difficulty]
+
+field_mapping_warning: >-
+  CRITICAL: `answer_number` is read BEFORE `answer`. In this slice the `answer`
+  field is literally the string "None" for essentially every row, with the real
+  gold value in `answer_number` (scripts/preprocess_omni_math.py sets
+  "answer": None explicitly). Reading `answer` first would silently score the
+  entire benchmark against the string "None". Note that the JSONL loader used
+  for the other four benchmarks has the OPPOSITE priority -- that is correct
+  for them and wrong here. Do not unify the two.
+
+paper_use:
+  executed_rows: 4181
+  settings:
+    - omnimath2__competition_math_4181__gpt_oss_120b
+    - omnimath2__competition_math_4181__gemma_4_31b
+  protocols: [baseline, single, per, broadcast]
+
+license: Apache-2.0
+redistribution: >-
+  Problem text is NOT redistributed by this release. The outcome tables release
+  ids and outcomes only.

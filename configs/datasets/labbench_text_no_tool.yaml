@@ -1,0 +1,74 @@
+# ===========================================================================
+# DATASET: LAB-Bench, text_no_tool slice (biology, closed-book, broader)
+# ===========================================================================
+# The strict slice PLUS DbQA, LitQA2 and SuppQA. A broader closed-book
+# stress test.
+#
+# NAMING CAUTION, taken verbatim from the upstream data README: this slice must
+# NOT be described as a database, literature-retrieval, or supplementary-
+# material TOOL-USE evaluation. No tool or retrieval was available. The added
+# subsets are being answered closed-book, which is why performance on them is
+# expected to be low.
+# ===========================================================================
+
+dataset_id: labbench_text_no_tool
+display_name: LAB-Bench (text_no_tool)
+version: "futurehouse/lab-bench@5c77cec648430f30611808808861eb86f81d5eaa/text_no_tool"
+domain: biology
+
+loader: jsonl
+path: ${DATA_ROOT}/lab-bench-public/text_no_tool/all.jsonl
+expected_rows: 1542
+
+obtain:
+  upstream_url: https://huggingface.co/datasets/futurehouse/lab-bench
+  pinned_revision: 5c77cec648430f30611808808861eb86f81d5eaa
+  pinned_revision_source: data/lab-bench-public/manifest.json
+  split: train
+  build_command: |
+    python scripts/prepare_lab_bench_llm.py --output data/lab-bench-public
+
+filtering:
+  included_subsets:
+    CloningScenarios: 33
+    ProtocolQA: 108
+    SeqQA: 600
+    DbQA: 520
+    LitQA2: 199
+    SuppQA: 82
+  total: 1542
+  excluded_subsets:
+    FigQA: "181; figure image assets"
+    TableQA: "244; table image assets"
+  row_level_exclusions: None.
+
+subset_heterogeneity_warning: >-
+  This slice is dominated by SeqQA (600) and DbQA (520), which together are
+  73 percent of it. Any aggregate "biology" number over this slice is mostly a
+  statement about those two subsets, and effects can point in opposite
+  directions across subsets. Group by lab_bench_subset before drawing a
+  conclusion about the benchmark as a whole.
+
+multiple_choice_construction:
+  gold_label: shuffled option LETTER, agent must emit \boxed{A}
+  option_shuffling: deterministic from row id + ideal answer
+  withheld_from_prompt: canary field, source DOIs, held-out key passages
+
+field_mapping:
+  input:              [input, question, problem]
+  answer:             [answer, answer_number, label]
+  reference_solution: [reference_solution, solution]
+  metadata_passthrough: >-
+    id, original_id, lab_bench_slice, lab_bench_subset, subtask, options,
+    answer_text, prompt_condition, domain, source.
+
+paper_use:
+  executed_rows: 1542
+  settings:
+    - labbench__text_no_tool__gpt_oss_120b_text_no_tool
+    - labbench__text_no_tool__gemma_4_31b_text_no_tool
+  protocols: [baseline, single, per, broadcast]
+  analyses: [matched, confidence, router, interaction]
+
+license: CC-BY-SA-4.0
+redistribution: ids and outcomes only; problem text withheld.

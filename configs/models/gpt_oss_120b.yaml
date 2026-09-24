@@ -1,0 +1,91 @@
+# ===========================================================================
+# MODEL: openai/gpt-oss-120b
+# ===========================================================================
+# Dual role in this paper:
+#   (a) SOLVER for 5 of the 10 released settings;
+#   (b) JUDGE for ALL 10, including every Gemma-solver setting.
+#
+# (b) is a deliberate design choice, not an oversight: fixing the judge means
+# the second-family validation changes the reasoning actors WITHOUT changing
+# the answer-comparison mechanism. Verified by parsing all 73 config.yaml files
+# under AgentVerse/configs/paper/: zero evaluator agents use any model other
+# than openai/gpt-oss-120b.
+# ===========================================================================
+
+model_id: openai/gpt-oss-120b
+family: gpt-oss
+display_name: GPT-OSS 120B
+roles: [solver, evaluator]
+
+# --- THE UNRESOLVABLE GAP ---------------------------------------------------
+model_revision: null
+model_revision_status: UNRESOLVED
+model_revision_note: >-
+  NO MODEL SNAPSHOT OR PROVIDER REVISION WAS EVER PINNED. The runs used an
+  OpenAI-compatible vLLM endpoint that served this model id; nothing in the
+  request, the response, or any artifact records which weights or which serving
+  build answered. Searched: every configs/paper/**/config.yaml (model: is a
+  bare string with no revision field), the released confidence-probe run manifests
+  (run_2026071{2,3}/**/run_manifest.json -- they record
+  model, temperature, max_tokens, max_workers, max_retries, timeout_seconds --
+  and no revision), and the release registry models.csv. There is therefore NO
+  WAY to reconstruct the exact model that produced the paper's numbers, and you
+  should not expect your rerun to match them item-for-item. See
+  docs/track_b_requirements.md.
+
+weights_license: Apache-2.0 upstream
+public_availability: >-
+  Openly available weights. Serve them yourself, or use any provider exposing
+  an OpenAI-compatible chat-completions endpoint under this or an equivalent
+  model id.
+
+# --- decoding, as actually used ---------------------------------------------
+decoding:
+  temperature: 0.0
+  max_tokens: 4096
+  top_p:
+    unknown: true
+    comment: >-
+      Never set by any paper config nor by the engine's request builder; the
+      server default applied and was not recorded. Searched all configs/paper
+      config.yaml files and agentverse/llms/openai.py (OpenAIChatArgs has no
+      top_p in the request path).
+  seed:
+    unknown: true
+    comment: >-
+      No request-level seed was sent. At temperature 0 the sampler is
+      near-deterministic but batching and kernel nondeterminism still perturb
+      outputs; a prior measurement on this stack found roughly 9 percent of
+      byte-identical judge inputs flipping verdict at temperature 0.
+  stop: null
+  response_format: >-
+    Never set. No JSON mode was used, for any role, including the roles whose
+    prompts demand a JSON object.
+
+decoding_provenance:
+  temperature: >-
+    configs/paper/*/config.yaml (every agent, `temperature: 0`) AND
+    the released run manifests, run_2026071{2,3}/**/run_manifest.json
+    ("temperature": 0.0).
+  max_tokens: >-
+    configs/paper/{baseline_llm,single_agent_hint_llm,per_hint_llm,
+    broadcast_hint_llm}/config.yaml -- 4096 for EVERY agent including the
+    evaluator. NOTE the Gemma variant configs under
+    configs/paper/different_model_family/ use 2048 for ACTORS but keep 4096
+    for the evaluator; that asymmetry is real. The 256 and 1024 max_tokens in
+    those manifests belong to the separate confidence probe, not to protocol
+    execution.
+
+response_quirk:
+  reasoning_content_fallback: >-
+    This model family can return an EMPTY `content` with the text under
+    `reasoning_content`, `reasoning` or `output_text`. The client implements
+    the same fallback ladder as the original engine
+    (agentverse/llms/openai.py::_get_content_or_empty). Without it a
+    substantial fraction of turns read as empty responses, which the box gate
+    would then score as wrong answers.
+
+pricing_note: >-
+  The original runs were on allocated HPC with no per-token billing, so no
+  monetary cost was recorded. Estimate your own from the token counts in
+  token_counts.json and your provider's rate.

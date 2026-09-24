@@ -1,0 +1,76 @@
+# ===========================================================================
+# MODEL: google/gemma-4-31B-it
+# ===========================================================================
+# SOLVER ONLY, for the second model family (5 of the 10 released settings).
+# It is NEVER the judge. Every Gemma-solver setting was judged by
+# openai/gpt-oss-120b, so that the family comparison varies the reasoning
+# actors while holding the answer-comparison mechanism fixed.
+# ===========================================================================
+
+model_id: google/gemma-4-31B-it
+family: gemma-4
+display_name: Gemma 4 31B Instruct
+roles: [solver]
+judge_for_this_family: openai/gpt-oss-120b     # configs/models/gpt_oss_120b.yaml
+
+model_revision: null
+model_revision_status: UNRESOLVED
+model_revision_note: >-
+  Same gap as the OSS model: no snapshot, revision or serving build was pinned
+  or recorded anywhere. Searched every configs/paper/**/config.yaml, the released
+  run manifests, and the release registry models.csv. Not reconstructible.
+
+weights_license: >-
+  Governed by the Gemma Terms of Use, https://ai.google.dev/gemma/terms .
+  Check them before redistributing weights or outputs.
+
+decoding:
+  temperature: 0.0
+  max_tokens: 2048
+  top_p:
+    unknown: true
+    comment: never set; server default applied and was not recorded.
+  seed:
+    unknown: true
+    comment: no request-level seed was sent.
+  stop: null
+  response_format: never set.
+
+decoding_provenance:
+  temperature: >-
+    configs/paper/different_model_family/*_gemma4_31b_eval_oss120b/config.yaml
+    (`temperature: 0`) AND the released run manifest
+    run_20260713/**/gemma_4_31b/run_manifest.json
+    ("temperature": 0.0, "model": "google/gemma-4-31B-it").
+  max_tokens: >-
+    2048 for ACTOR agents, from
+    configs/paper/different_model_family/*_gemma4_31b_eval_oss120b/config.yaml
+    and configs/paper/lab_bench/**/gemma4_31b_eval_oss120b/**/config.yaml.
+    This DIFFERS from the OSS configs, which use 4096 for actors. The evaluator
+    remains 4096 in both families because the judge is the OSS model either way.
+
+other_rule_differences_in_this_family:
+  comment: >-
+    Pairing this model config with the protocol configs in configs/protocols/
+    reproduces the OSS rule settings, not the Gemma ones. Two rule values also
+    differ in the Gemma bundles and are NOT applied automatically:
+  per: >-
+    failed_attempt_memory_limit 1 (OSS: 3) and candidate_revision_memory_limit 2
+    (OSS: 5), from configs/paper/different_model_family/
+    per_hint_gemma4_31b_eval_oss120b/config.yaml.
+  broadcast: >-
+    recent_history_window 3 (OSS: 5), from configs/paper/different_model_family/
+    broadcast_hint_gemma4_31b_eval_oss120b/config.yaml.
+  how_to_apply: >-
+    Edit those keys in the protocol config for a Gemma-matched rerun. They
+    shrink the context each actor sees, which plausibly reflects the smaller
+    model's context budget, and they change behaviour -- do not ignore them.
+
+availability_warning: >-
+  "gemma-4" was the model id served by the endpoint used for these runs. Verify
+  that your provider exposes an equivalent instruction-tuned checkpoint under
+  this or a comparable id before assuming a like-for-like comparison. If it
+  does not, you are running a different second family and should say so.
+
+pricing_note: >-
+  No monetary cost was recorded; the runs were on allocated HPC.

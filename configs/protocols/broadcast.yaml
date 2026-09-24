@@ -1,179 +1,199 @@
-# Broadcast protocol -- multi-agent deliberation.
+# ===========================================================================
+# PROTOCOL 4 of 4: BROADCAST (peer deliberation over a shared channel)
+# ===========================================================================
+# N peers with distinct mathematical temperaments deliberate on a shared
+# broadcast channel. A confidence poll allocates the single speaking turn each
+# round; a candidate answer must then clear an approval vote.
 #
-# PROVENANCE. Transcribed from the AgentVerse execution configs and code that
-# produced the released outcomes; `source:` keys give repository-relative
-# paths. Nothing is inferred. Unestablished fields carry `unknown: true`.
+# CONTROL FLOW (one outer round)
+#   for turn in range(discussion_rounds):         # discussion_rounds = 4
+#       EVERY peer POLLS      -> JSON {score 1-100, reason, intent, candidate}
+#       highest score SPEAKS publicly (exactly one speaker per turn)
+#       peers at/above speak_threshold that did NOT win record a PRIVATE
+#           deferred note, visible only to themselves on later turns
+#       if a candidate emerged:
+#           for r in range(approval_rounds):      # approval_rounds = 2
+#               EVERY peer votes {approve, feedback, revised_answer}
+#               unanimous approval -> consensus, break out of discussion
+#               else candidate <- majority revision, continue
+#   if no candidate at all: final proposal round, highest confidence wins
+#   evaluate(final_output)
 #
-# THIS FILE DOES NOT EXECUTE ANYTHING (offline analysis package).
+# COST SHAPE: the poll goes to EVERY peer on EVERY turn even though only one
+# speaks, so peer count multiplies token cost without multiplying public
+# output. With 3 peers / 4 discussion rounds / 2 approval rounds, a single
+# outer round can reach 3*4 polls + 4 speeches + 3*2 votes = 22 actor calls.
+# This is the most expensive of the four protocols.
+#
+# TWO MEMORY LANES PER PEER
+#   public  : the shared channel, shaped by memory_mode + recent_history_window
+#   private : that peer's own deferred notes, never broadcast
+#
+# RULE PARAMETERS IN THIS FILE
+#   approval_policy                    'unanimous' = every peer must approve. 'majority' = strict majority.
+#   approval_rounds                    Approval votes attempted per candidate before giving up on consensus.
+#   candidate_selection_policy         How to pick a replacement when approval fails and peers proposed revisions.
+#   discussion_rounds                  Poll-and-speak turns per outer round.
+#   evaluator_dimensions               Field names the judge parser looks for. ONLY 'Correctness' is read at runtime; 'Verdict:' is never parsed.
+#   include_hint_on_fail               On FAIL, make a SECOND judge call for a repair hint. false = one judge call total.
+#   memory_mode                        How much of the shared channel each peer sees.
+#   recent_history_window              Number of most-recent public messages always shown verbatim.
+#   reviewer_feedback_mode             'hint' = the judge's real repair hint reaches the next attempt. 'plain' = that text is DISCARDED for a canned string.
+#   speak_threshold                    Peers polling at/above this that did NOT win the turn record a private deferred note.
+#   max_rounds                         Outer attempts. The loop stops the moment the evaluator returns PASS.
+#
+# RETRY POLICY. max_retry (per role, below) is the number of times a role's
+# call+parse is retried before the turn is given up on; 10 in every paper
+# config. Transport-level retry for HTTP 429/5xx is separate and lives in
+# the provider config (transport.max_retries).
+#
+# TOKEN ACCOUNTING. Counted from the server's usage object per call, summed
+# per role and in total, written to token_counts.json. Both the logical call
+# count and the HTTP attempt count are recorded.
+#
+# EVALUATOR INVOCATION. type 'llm' for all four protocols. A box gate runs
+# FIRST: no \boxed{...} in the candidate means the judge is NEVER CALLED and
+# the item is recorded FAIL with direct_protocol_fail. The judge is
+# gpt-oss-120b for EVERY paper run including the Gemma-solver runs -- verified
+# across all 73 config.yaml files under configs/paper/.
+#
+# All prompt strings below are copied VERBATIM from the source config named in
+# the provenance block. Placeholders use ${name} and are substituted with
+# string.Template.safe_substitute; do not rename them.
+# ===========================================================================
 
 protocol_id: broadcast
-display_name: Broadcast
-description: >-
-  Three peer deliberators with different temperaments discuss the problem on a
-  shared transcript. Each turn all three are polled for a desire-to-speak score
-  and the highest scorer speaks. Once a candidate answer exists the peers vote on
-  approving it. This is the only one of the four protocols with voting.
-
-source_config: configs/paper/broadcast_hint_llm/config.yaml
-
+name: broadcast-deliberation
+prompt_version: omni_math_v1
+evaluator_model_config: gpt_oss_120b.yaml
+max_rounds: 3
+rule:
+  approval_policy: unanimous
+  approval_rounds: 2
+  candidate_selection_policy: majority_revision
+  discussion_rounds: 4
+  evaluator_dimensions:
+  - Correctness
+  include_hint_on_fail: true
+  memory_mode: summary_plus_recent
+  recent_history_window: 5
+  reviewer_feedback_mode: hint
+  speak_threshold: 65
+peers:
+- name: Mira
+  role_description: You are a calm mathematical peer who likes to decompose difficult problems into
+    a few stable subgoals before committing to a conclusion. You tend to slow the group down just enough
+    to reduce avoidable mistakes.
+- name: Rowan
+  role_description: You are a skeptical mathematical peer who naturally looks for hidden assumptions,
+    incorrect leaps, and edge cases. You do not object for the sake of objecting; you intervene when
+    you think precision matters.
+- name: Talia
+  role_description: You are a synthesis-oriented mathematical peer who tries to consolidate the group's
+    strongest ideas into one coherent answer. You are willing to propose a final answer, but only when
+    the discussion has earned it.
 roles:
-  - name: Mira
+  deliberator:
+    name: <peer name, see peers:>
     agent_type: deliberator
-    role_description: >-
-      You are a calm mathematical peer who likes to decompose difficult problems
-      into a few stable subgoals before committing to a conclusion. You tend to
-      slow the group down just enough to reduce avoidable mistakes.
     max_retry: 10
+    max_tokens: 4096
     output_parser: dummy
-    source: configs/paper/broadcast_hint_llm/config.yaml:98-119
-  - name: Rowan
-    agent_type: deliberator
-    role_description: >-
-      You are a skeptical mathematical peer who naturally looks for hidden
-      assumptions, incorrect leaps, and edge cases. You do not object for the sake
-      of objecting; you intervene when you think precision matters.
-    max_retry: 10
-    output_parser: dummy
-    source: configs/paper/broadcast_hint_llm/config.yaml:121-142
-  - name: Talia
-    agent_type: deliberator
-    role_description: >-
-      You are a synthesis-oriented mathematical peer who tries to consolidate the
-      group's strongest ideas into one coherent answer. You are willing to propose
-      a final answer, but only when the discussion has earned it.
-    max_retry: 10
-    output_parser: dummy
-    source: configs/paper/broadcast_hint_llm/config.yaml:144-165
-  - name: Evaluator
+    memory_type: chat_history
+    max_public_context_tokens: 2400
+    max_private_context_tokens: 600
+    max_speak_history_context_tokens: 600
+    max_advice_context_tokens: 2400
+    max_candidate_context_tokens: 300
+    max_manual_prompt_tokens: 12000
+    prepend_prompt: |-
+      You are one peer in a small math deliberation group.
+
+      Problem:
+      ${task_description}
+
+      Outer-loop feedback from the evaluator or prior attempt:
+      ${advice}
+
+      Current shared candidate answer:
+      ${candidate_answer}
+
+      Your mathematical temperament:
+      ${role_description}
+
+      Your private deferred notes:
+      ${private_memory}
+
+      Current turn label:
+      ${current_turn_label}
+
+      Your own speaking history in this run:
+      ${own_speak_history}
+
+      Current phase:
+      ${phase}
+
+      Phase instruction:
+      ${phase_instruction}
+    append_prompt: |-
+      Use the shared chat history above to stay consistent with the ongoing discussion.
+      Be concise, concrete, and mathematically serious.
+      Omni-MATH final answers are not always plain numbers. A valid answer may be a symbolic expression, formula, set, interval, condition, equality, or inequality.
+      Do not role-play a rigid planner / executor / reviewer pipeline.
+      When the system asks for a confidence poll, you must provide an integer confidence score from 1 to 100 in the required structured format.
+      If you want the group to consider a concrete final answer, include:
+      Candidate Answer:
+      \boxed{<answer>}
+  evaluator:
+    name: Evaluator
     agent_type: evaluator
     role_description: Evaluator
     max_retry: 10
+    max_tokens: 4096
     output_parser: mgsm-evaluator
-    source: configs/paper/broadcast_hint_llm/config.yaml:167-182
+    memory_type: chat_history
+    prepend_prompt: |-
+      You are the Evaluator for a multi-agent math deliberation system.
 
-deliberator_prompt_budgets:
-  max_public_context_tokens: 2400
-  max_private_context_tokens: 600
-  max_speak_history_context_tokens: 600
-  max_advice_context_tokens: 2400
-  max_candidate_context_tokens: 300
-  max_manual_prompt_tokens: 12000
-  applies_to: [Mira, Rowan, Talia]
-  source: configs/paper/broadcast_hint_llm/config.yaml:105-110, 128-133, 151-156
+      Problem:
+      ${task_description}
 
-environment:
-  env_type: task-broadcast-deliberation
-  max_rounds: 3
-  discussion_rounds: 4
-  approval_rounds: 2
-  speak_threshold: 65
-  memory_mode: summary_plus_recent
-  recent_history_window: 5
-  approval_policy: unanimous
-  candidate_selection_policy: majority_revision
-  reviewer_feedback_mode: hint
-  source: configs/paper/broadcast_hint_llm/config.yaml:5, 80-95
+      MAS final submission:
+      ${solution}
 
-turns:
-  max_rounds: 3
-  discussion_rounds_per_outer_round: 4
-  approval_rounds_per_candidate: 2
-  source: configs/paper/broadcast_hint_llm/config.yaml:5, 86-87
+      Ground truth / evaluator-only reference material:
+      ${result}
 
-stopping_rule:
-  outer_rule: "success OR cnt_turn >= max_rounds"
-  outer_implementation: agentverse/environments/tasksolving_env/broadcast_deliberation.py:92-93
-  discussion_loop: >-
-    4 turns. Each turn polls ALL THREE peers in parallel (a real LLM call each,
-    returning score/reason/intent/candidate_answer) and the highest scorer speaks.
-    Non-speakers scoring above speak_threshold=65 record a private deferred note
-    instead of speaking (capped at 8 notes).
-  approval_loop: >-
-    Once a candidate exists, up to 2 approval rounds; all three peers call
-    aapprove_candidate in parallel, returning approve/feedback/revised_answer.
-  consensus_rule: >-
-    approval_policy "unanimous" means all three must approve. Consensus breaks
-    both the approval loop and the discussion loop.
-  source: agentverse/environments/tasksolving_env/rules/broadcast_deliberation.py:741-746, 833-862, 1014-1016, 1145, 1181-1311, 1529-1536
-
-retry_policy:
-  agent_level:
-    max_retry: 10
-    scope: "parse failure or any exception from the LLM call"
-    on_exhaustion: "emits an empty message; deliberation continues"
-    source: agentverse/agents/tasksolving_agent/deliberator.py:215
-  transport_level:
-    rate_limit_max_attempts: 7
-    rate_limit_backoff_cap_sec: 60
-    transient_max_attempts: 4
-    transient_backoff_cap_sec: 8
-    counted_in_tokens: false
-    source: agentverse/llms/openai.py:167-172, 751-810
-
-context_and_memory:
-  memory_mode: summary_plus_recent
-  recent_history_window: 5
-  reset_between_outer_rounds: false
-  reset_detail: >-
-    Agents are reset once per problem; the rule's reset() only clears the
-    evaluator and the ledgers.
-  shared_transcript: "every public message is broadcast to all three peers' chat_history"
-  summarization_caveat: >-
-    The paper config does NOT set has_summary on the deliberators, so no summary
-    is ever produced and summary_plus_recent degrades to the last 5 messages. A
-    separate configs/tier6_5_test_summary_memory/ variant turns real summarization
-    on; that variant is NOT the paper protocol.
-  private_notes: "max_private_notes: 8"
-  source: agentverse/environments/tasksolving_env/rules/broadcast_deliberation.py:290-293, 735-739; agentverse/agents/tasksolving_agent/deliberator.py:235-250, 493-499; agentverse/memory/chat_history.py:285-300
-
-final_answer_selection:
-  voting: true
-  mechanisms:
-    - name: unanimous_approval
-      detail: "all three peers must approve a candidate for consensus"
-    - name: majority_revision
-      detail: >-
-        Between approval rounds the next candidate is the modal revised_answer
-        across the three peers (Counter.most_common(1)).
-    - name: confidence_argmax_fallback
-      detail: >-
-        If no candidate emerged at all, a final proposal round asks all three for
-        (confidence, final_answer, rationale) and takes the argmax-confidence answer.
-  submission_format: >-
-    "Consensus Status:" + "Candidate Source:" + "Final Answer For Evaluator:"
-  source: agentverse/environments/tasksolving_env/rules/broadcast_deliberation.py:769-799, 1030, 1099-1102, 1648
-
-evaluator_invocation:
-  type: llm
-  class: LlmPerEvaluator
-  stateless: true
-  boxed_answer_precheck: 'missing \boxed{} short-circuits to FAIL without an LLM call'
-  hint_call_on_fail: true
-  calls_per_outer_round: "1 verdict, plus 1 hint call if the verdict is FAIL"
-  feedback_mode: hint
-  source: agentverse/environments/tasksolving_env/rules/broadcast_deliberation.py:1458-1478; agentverse/environments/tasksolving_env/rules/evaluator/per.py:451-455, 479, 529-559
-
-token_accounting:
-  primitive: "usage.prompt_tokens / usage.completion_tokens accumulated per LLM instance"
-  polling_is_billed: >-
-    IMPORTANT: the desire-to-speak poll is a real LLM call for every peer on every
-    turn, so a Broadcast round costs far more than the number of utterances
-    suggests.
-  memory_summarizer_tokens: "counted separately; not used here (has_summary is off)"
-  per_example_total: "summed across agents; model calls = sum of total_request_count"
-  per_example_isolation: "reset_token_counters() per example; see commit b4a2db6ee note in baseline.yaml"
-  source:
-    - agentverse/llms/openai.py:1433-1435
-    - agentverse/metrics/collector.py:186-247
-    - agentverse/agents/tasksolving_agent/deliberator.py:660-672
-
-nominal_model_calls: >-
-  Per outer round: 4 turns x (3 polls + 1 speak) + up to 2 approval rounds x 3
-  reviews + 1 or 2 evaluator calls. Up to 3 outer rounds.
-
-model_settings:
-  llm_type: gpt-3.5-turbo   # registry alias, NOT the served model
-  model: openai/gpt-oss-120b
-  temperature: 0
-  max_tokens: 4096
-  source: configs/paper/broadcast_hint_llm/config.yaml:114-117, 137-140, 161-163, 177-180
+      Requirements:
+        - Decide whether the MAS final answer is mathematically equivalent to the ground truth.
+        - Focus on the final answer, not stylistic wording.
+        - The reference material may include both the final answer and an official solution. Use the official solution only to understand the intended reasoning and diagnose mismatch type.
+        - The repair hint must be tailored to the current extracted MAS final answer, the ground-truth final answer, and the official solution. Do not recycle a previous hint unless the current final answer and mismatch type are unchanged.
+        - If the current final answer changed, diagnose the new mismatch type, for example wrong value, incomplete list, placeholder, wrong answer shape, missing cases, or insufficient generality.
+        - The final answer may be numeric, symbolic, formulaic, set-valued, or conditional.
+        - If the submission gives isolated numbers/examples but the problem asks for all objects, a formula/equation, a condition, or a classification, the hint should explicitly flag an answer-shape or generality mismatch without naming the missing answer.
+        - For prompts such as "find all", "for each", "all positive integers", "all functions", or "explicit form", check that the answer is a complete universal statement/family, not just tested cases.
+        - Do not reveal, quote, restate, or hint at the ground truth or official solution in your response.
+        - Output a clear verdict label: `Verdict: PASS` or `Verdict: FAIL`.
+        - If the answer is equivalent, output `Correctness: 1`.
+        - Otherwise output `Correctness: 0` and give a short non-leaking repair hint. When relevant, name answer-shape or generality mismatch, such as an over-specific numeric answer when a general condition/equation/family is required.
+    append_prompt: |-
+      Output format:
+      Verdict: PASS or FAIL
+      Correctness: 0 or 1
+      Response: <brief non-leaking repair hint; mention answer-shape/generality if relevant, without revealing the gold answer>
+provenance:
+  derived_from_config: AgentVerse/configs/paper/broadcast_hint_llm/config.yaml
+  derived_from_benchmark: AgentVerse/configs/paper/broadcast_hint_llm/benchmark.yaml
+  upstream_env_type: task-broadcast-deliberation
+  upstream_rule_class: agentverse/environments/tasksolving_env/rules/broadcast_deliberation.py::BroadcastDeliberationRule
+  upstream_evaluator_type: llm
+  upstream_evaluator_class: agentverse/environments/tasksolving_env/rules/evaluator/per.py::LlmPerEvaluator
+  upstream_output_parsers:
+    deliberator: dummy
+    evaluator: mgsm-evaluator
+  prompts_copied_verbatim: true
+  port_location: src/protocol_routing_exec/protocols.py
+  gemma_variant_differences: configs/paper/different_model_family/*_gemma4_31b_eval_oss120b/config.yaml
+    uses IDENTICAL prompts and rule structure but actor max_tokens 2048 instead of 4096, recent_history_window
+    3 instead of 5. The evaluator stays gpt-oss-120b at max_tokens 4096 in every variant.

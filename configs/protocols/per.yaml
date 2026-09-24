@@ -1,191 +1,302 @@
-# PER protocol -- planner / executor / reviewer pipeline.
+# ===========================================================================
+# PROTOCOL 3 of 4: PER (Planner -> Executor -> Reviewer)
+# ===========================================================================
+# A hierarchical pipeline with role separation, an inner routing loop, and an
+# in-round repair pass after a failed evaluation.
 #
-# PROVENANCE. Transcribed from the AgentVerse execution configs and code that
-# produced the released outcomes; `source:` keys give repository-relative
-# paths. Nothing is inferred. Unestablished fields carry `unknown: true`.
+# CONTROL FLOW (one outer round)
+#   for k in range(inner_rounds):                 # inner_rounds = 2
+#       if next_actor is planner:  Planner -> Executor
+#       else:                      Executor
+#       Reviewer -> exactly one route tag on the last line
+#           [Agree]          -> break (stop_on_agree: true)
+#           [Route:Planner]  -> next_actor = planner
+#           [Route:Executor] -> next_actor = executor
+#   evaluate(current_candidate)
+#   if FAIL:                                       # the repair pass
+#       Planner(repair) -> Executor(repair) -> Reviewer
+#       evaluate(revised_candidate)
+#   if still FAIL: a route tag is FORCED onto the reviewer output and carried
+#   into the next outer round through ${advice}.
 #
-# THIS FILE DOES NOT EXECUTE ANYTHING (offline analysis package).
+# HARD ROLE SEPARATION is enforced by PROMPT, not by code: the Planner is told
+# it MUST NOT perform arithmetic or symbolic manipulation and must delegate
+# every computation to the Executor. Nothing in the engine checks this.
+#
+# COST SHAPE: one FAILING outer round issues up to inner_rounds*3 + 3 actor
+# calls plus 2 evaluations, and each evaluation is itself up to 2 judge calls.
+#
+# FINAL-ANSWER OWNERSHIP: the Reviewer owns submission. It emits a
+# "Final Answer For Evaluator:" block ONLY when it routes [Agree]. If it never
+# agrees, the protocol submits the Executor's latest boxed answer instead.
+#
+# RULE PARAMETERS IN THIS FILE
+#   candidate_revision_memory_limit    Ring-buffer size for candidate lifecycle events, per question.
+#   evaluator_dimensions               Field names the judge parser looks for. ONLY 'Correctness' is read at runtime; 'Verdict:' is never parsed.
+#   failed_attempt_memory_limit        Ring-buffer size for rejected answers + judge hints, per question.
+#   include_hint_on_fail               On FAIL, make a SECOND judge call for a repair hint. false = one judge call total.
+#   inner_rounds                       Planner/Executor/Reviewer cycles inside ONE outer round.
+#   reviewer_feedback_mode             'hint' = the judge's real repair hint reaches the next attempt. 'plain' = that text is DISCARDED for a canned string.
+#   stop_on_agree                      Reviewer [Agree] breaks the inner loop immediately and submits.
+#   max_rounds                         Outer attempts. The loop stops the moment the evaluator returns PASS.
+#
+# RETRY POLICY. max_retry (per role, below) is the number of times a role's
+# call+parse is retried before the turn is given up on; 10 in every paper
+# config. Transport-level retry for HTTP 429/5xx is separate and lives in
+# the provider config (transport.max_retries).
+#
+# TOKEN ACCOUNTING. Counted from the server's usage object per call, summed
+# per role and in total, written to token_counts.json. Both the logical call
+# count and the HTTP attempt count are recorded.
+#
+# EVALUATOR INVOCATION. type 'llm' for all four protocols. A box gate runs
+# FIRST: no \boxed{...} in the candidate means the judge is NEVER CALLED and
+# the item is recorded FAIL with direct_protocol_fail. The judge is
+# gpt-oss-120b for EVERY paper run including the Gemma-solver runs -- verified
+# across all 73 config.yaml files under configs/paper/.
+#
+# All prompt strings below are copied VERBATIM from the source config named in
+# the provenance block. Placeholders use ${name} and are substituted with
+# string.Template.safe_substitute; do not rename them.
+# ===========================================================================
 
-protocol_id: planner_executor_reviewer
-aliases: [per]   # the short-paper benchmark CSV spells this protocol "per"
-display_name: PER
-description: >-
-  A Planner decomposes the problem without computing, an Executor performs the
-  computation, and a Reviewer routes control back to either of them or agrees to
-  submit. Up to three outer rounds, each containing two inner planner/executor/
-  reviewer iterations and, on failure, an in-round repair pass.
-
-source_config: configs/paper/per_hint_llm/config.yaml
-
+protocol_id: per
+name: pipeline
+prompt_version: omni_math_v1
+evaluator_model_config: gpt_oss_120b.yaml
+max_rounds: 3
+rule:
+  candidate_revision_memory_limit: 5
+  evaluator_dimensions:
+  - Correctness
+  failed_attempt_memory_limit: 3
+  include_hint_on_fail: true
+  inner_rounds: 2
+  reviewer_feedback_mode: hint
+  stop_on_agree: true
 roles:
-  - name: Planner
+  planner:
+    name: Planner
     agent_type: solver
     role_description: Planner
     max_retry: 10
+    max_tokens: 4096
     output_parser: mgsm
-    role_constraint: >-
-      "You MUST NOT carry out symbolic manipulation or arithmetic yourself...
-      Any computation or algebraic simplification must be delegated to the
-      Executor as explicit operations."
-    memory:
-      memory_type: chat_history
-      has_summary: true
+    memory_type: chat_history
+    upstream_rolling_summary:
+      enabled: true
       max_summary_tlength: 300
-      summary_model: openai/gpt-oss-120b
       summary_update_every_n_messages: 3
       summary_keep_last_n_messages: 0
       summary_keep_recent_token_budget: 200
-    source: configs/paper/per_hint_llm/config.yaml:26-29, 201-222
-  - name: Executor
+      NOTE: NOT IMPLEMENTED in this port. See simplifications.
+    prepend_prompt: |-
+      You are the Planner in a Planner→Executor→Reviewer loop for competition-level mathematics.
+
+      Problem:
+      ${task_description}
+
+      Previous plan you wrote (may be empty):
+      ${previous_plan}
+
+      Reviewer / System feedback (may be empty):
+      ${advice}
+
+      HARD ROLE SEPARATION (critical):
+      - You MUST NOT carry out symbolic manipulation or arithmetic yourself.
+      - You MUST NOT write computed intermediate values.
+      - You MAY restate givens from the problem.
+      - Any computation or algebraic simplification must be delegated to the Executor as explicit operations.
+
+      REQUIRED STRUCTURE:
+      1) Givens / objects / definitions
+      2) Target quantity and answer form
+      3) Key lemmas or transformations to use
+      4) Ordered execution steps for the Executor
+
+      In "Target quantity and answer form", explicitly identify what the final answer should look like:
+      - a single number or fraction
+      - an algebraic expression or formula
+      - a set/list of integers, tuples, or configurations
+      - a family of functions or an explicit classification
+      - an inequality, condition, or symbolic statement
+
+      DELTA REQUIREMENT:
+      - Begin with "DELTA:" and list 2-4 concrete updates vs the previous plan.
+      - If reviewer feedback exists, address it explicitly.
+    append_prompt: |-
+      You are ${role_description}.
+      Use the chat history and avoid repeating the same plan.
+      Do NOT provide the final answer.
+  executor:
+    name: Executor
     agent_type: executor
+    role_description: Executor
     max_retry: 10
+    max_tokens: 4096
     output_parser: mgsm
-    memory:
-      memory_type: chat_history
-      has_summary: false
-    runs_history_free: true
-    runs_history_free_detail: >-
-      Called with disable_chat_history=True because embed_action_feedback_in_history
-      defaults to False and the config does not enable it.
-    source: configs/paper/per_hint_llm/config.yaml:224-239, agentverse/environments/tasksolving_env/rules/per.py:590-592, 1538
-  - name: Reviewer
+    memory_type: chat_history
+    prepend_prompt: |-
+      You are the Executor.
+      You must execute the Planner's plan and perform all calculations / derivations.
+
+      Problem:
+      ${task_description}
+
+      Planner plan:
+      ${solution}
+
+      Reviewer feedback for Executor (may be empty):
+      ${advice}
+
+      REQUIREMENTS:
+      - Carry out the needed derivations.
+      - Keep the reasoning readable and concise.
+      - Infer the required answer shape from the problem statement before finishing.
+      - The final answer may be a number, fraction, algebraic formula, set of tuples, function family, condition, or symbolic statement such as `n \neq 5`.
+      - If the problem asks for all solutions / all functions / explicit form / all integers `n`, the boxed answer must state the complete family or condition, not just one example.
+      - Prefer exact symbolic forms over decimals unless the problem explicitly asks for approximation.
+      - Your LAST line must be EXACTLY: \boxed{<answer>}
+      - The boxed answer may be a number, fraction, algebraic expression, or concise symbolic form.
+      - No punctuation after the final box.
+    append_prompt: |-
+      Show the derivation clearly.
+      End with EXACTLY one final line: \boxed{<answer>}
+  reviewer:
+    name: Reviewer
     agent_type: critic
+    role_description: Reviewer
     max_retry: 10
+    max_tokens: 4096
     output_parser: mgsm-critic-route
-    routing_contract: >-
-      "End with EXACTLY ONE tag on the last line:
-       [Route:Planner] OR [Route:Executor] OR [Agree]"
-    memory:
-      memory_type: chat_history
-      has_summary: true
+    memory_type: chat_history
+    upstream_rolling_summary:
+      enabled: true
       max_summary_tlength: 300
-      summary_model: openai/gpt-oss-120b
       summary_update_every_n_messages: 3
       summary_keep_last_n_messages: 0
       summary_keep_recent_token_budget: 200
-    source: configs/paper/per_hint_llm/config.yaml:146-147, 241-262
-  - name: Evaluator
+      NOTE: NOT IMPLEMENTED in this port. See simplifications.
+    prepend_prompt: |-
+      You are the Reviewer in a Planner→Executor→Reviewer pipeline for difficult math problems.
+
+      FINAL ANSWER OWNERSHIP:
+      - You are responsible for deciding whether the current MAS candidate is ready for evaluator submission.
+      - The system keeps track of the current candidate answer separately from your review text.
+      - Only when you are actually submitting the current candidate for evaluation should you include:
+        Final Answer For Evaluator:
+        \boxed{<current best answer>}
+      - If you route to Planner or Executor, do NOT include a `Final Answer For Evaluator:` section.
+      - Infer the required answer shape from the problem statement before judging correctness.
+      - For Omni-MATH, the boxed answer may be numeric, algebraic, set-valued, functional, geometric, or another concise symbolic/textual mathematical form.
+      - The correct answer may be a formula, a classification, a set of tuples, a family of functions, or a statement like `n \neq 5`; it is not always a single number.
+      - If the problem asks for all solutions / all functions / explicit form / all valid `n`, then an answer giving only one example or only a partial family is incorrect.
+      - For `numeric-verifier`, `exact`, and `omni-rule`, the evaluator judges the current candidate's boxed final answer. If the current candidate has no boxed final answer, the evaluator will reject it and ask for a proper submission.
+      - For `omni-judge` and `omni-verifier`, the evaluator may read more context, but the current candidate still needs a clear final answer.
+      - The final line of your response must still be exactly one route tag.
+      - If ${advice} contains a failure indicator such as `FAIL` or `Score: False`, you MUST end with ONLY `[Route:Planner]` or `[Route:Executor]`. You MUST NOT output `[Agree]`.
+      - After a FAIL, treat the current candidate as probably wrong or incomplete unless the issue is clearly only formatting.
+      - When ${advice} reports a FAIL, include at least one concrete revision instruction for the next agent.
+      - After a FAIL, prefer pipeline repair: send concrete instructions to Planner or Executor so the next MAS attempt changes the actual solution, not only the review text.
+      - Do NOT approve an answer only because the derivation sounds coherent; check answer type, completeness, quantifiers, edge cases, and mathematical equivalence to what the problem actually asks.
+      - Do not repeat your previous reviewer message verbatim after a FAIL.
+      - Keep the review concise. Do NOT restate the full derivation.
+      - Use at most 2 short bullets under Diagnosis and at most 2 short bullets under Fix Instruction.
+      - Keep the total reviewer text before the final boxed answer brief.
+
+      Inputs you see:
+      - Problem
+      - Previous Planner plan
+      - Executor output
+      - System/Evaluator feedback in ${advice}
+
+      Problem:
+      ${task_description}
+
+      Previous Planner plan:
+      ${previous_plan}
+
+      Current submission to review:
+      ${preliminary_solution}
+
+      System/Evaluator feedback:
+      ${advice}
+    append_prompt: |-
+      Routing rules:
+      - Review the current submission and decide whether the current candidate is ready to submit.
+      - Approve only if the derivation supports the exact answer shape requested by the problem and the answer appears complete.
+      - Do NOT preserve the same candidate after FAIL unless you can point to a specific formatting-only issue.
+      - After FAIL, prefer routing to Planner or Executor with a concrete repair target instead of only rewriting your own boxed answer.
+      - If the plan is flawed, incomplete, misses cases, or uses the wrong interpretation, route to Planner.
+      - If the plan is sound but the derivation, algebra, completeness check, or boxing is flawed, route to Executor.
+      - Only on `[Agree]`, include the final answer block immediately before the route tag.
+      - On `[Route:Planner]` or `[Route:Executor]`, do NOT include any final answer block.
+
+      Output format (STRICT):
+      Diagnosis:
+      - bullet 1
+      - bullet 2
+      Fix Instruction:
+      - bullet 1
+      If and only if you are submitting now, add:
+      Final Answer For Evaluator:
+      \boxed{<current best answer>}
+      End with EXACTLY ONE tag on the last line:
+        [Route:Planner] OR [Route:Executor] OR [Agree]
+  evaluator:
+    name: Evaluator
     agent_type: evaluator
+    role_description: Evaluator
     max_retry: 10
+    max_tokens: 4096
     output_parser: mgsm-evaluator
-    source: configs/paper/per_hint_llm/config.yaml:264-279
+    memory_type: chat_history
+    prepend_prompt: |-
+      You are the Evaluator in a Planner→Executor→Reviewer loop for olympiad-style mathematics.
 
-agent_count:
-  reviewers: 1
-  detail: >-
-    PER forces exactly one reviewer rather than a critic group; the `cnt_agents`
-    field is NOT used by any of the four paper protocols (it appears only in
-    legacy task configs and in the unrelated DHD configs).
-  source: agentverse/tasksolving.py:139-141
+      Problem:
+      ${task_description}
 
-environment:
-  env_type: task-per
-  max_rounds: 3
-  inner_rounds: 2
-  stop_on_agree: true
-  reviewer_feedback_mode: hint
-  failed_attempt_memory_limit: 3
-  candidate_revision_memory_limit: 5
-  evaluator_data_name: omni-math
-  source: configs/paper/per_hint_llm/config.yaml:8-9, 183-197
+      Submitted candidate:
+      ${solution}
 
-turns:
-  max_rounds: 3
-  inner_rounds: 2
-  source: configs/paper/per_hint_llm/config.yaml:8-9
+      Ground truth / evaluator-only reference material:
+      ${result}
 
-stopping_rule:
-  outer_rule: "success OR cnt_turn >= max_rounds"
-  outer_implementation: agentverse/environments/tasksolving_env/per.py:77-79
-  inner_loop: >-
-    Two iterations of Planner -> Executor -> Reviewer. The inner loop breaks
-    early when the reviewer's route tag is "agree" or "evaluate"
-    (stop_on_agree: true).
-  inner_implementation: agentverse/environments/tasksolving_env/rules/per.py:954, 971, 1010, 1126, 1185-1186
-  route_parse_default: >-
-    An unparseable or empty reviewer tag defaults to "executor", NOT to agree.
-  route_parse_source: agentverse/environments/tasksolving_env/rules/per.py:183-201
-  in_round_repair_pass: >-
-    IMPORTANT: a FAILED evaluator submission triggers a second, in-round repair
-    pass (repair Planner -> repair Executor -> repair Reviewer) and a SECOND
-    evaluator submission in the same outer round. One outer round can therefore
-    contain two evaluator submissions.
-  in_round_repair_source: agentverse/environments/tasksolving_env/rules/per.py:1417-1422, 1471, 1533, 1604, 1660-1665; agentverse/environments/tasksolving_env/per.py:23
-  forced_route_on_fail: >-
-    If the reviewer emits no repair route after a failure, one is injected by a
-    keyword heuristic.
-  forced_route_source: agentverse/environments/tasksolving_env/rules/per.py:252-290
-
-retry_policy:
-  agent_level:
-    max_retry: 10
-    scope: "parse failure or any exception from the LLM call"
-    on_exhaustion: "emits an empty message; the round continues"
-    source: agentverse/agents/tasksolving_agent/{solver,executor,critic,evaluator}.py
-  transport_level:
-    rate_limit_max_attempts: 7
-    rate_limit_backoff_cap_sec: 60
-    transient_max_attempts: 4
-    transient_backoff_cap_sec: 8
-    counted_in_tokens: false
-    source: agentverse/llms/openai.py:167-172, 751-810
-
-context_and_memory:
-  reset_between_outer_rounds: false
-  reset_detail: >-
-    Agents are reset ONCE PER PROBLEM, not between outer rounds; the rule's
-    reset() only clears the evaluator and the ledgers.
-  shared_history: >-
-    Planner and Reviewer share broadcast history. The Executor is excluded and
-    runs history-free.
-  planner_reviewer_context: "rolling summary + recent (has_summary: true)"
-  ledgers:
-    failed_attempt_memory_limit: 3
-    candidate_revision_memory_limit: 5
-    reset_scope: per problem
-  source: agentverse/environments/tasksolving_env/rules/per.py:61-93, 598-607, 633-636, 1526, 1538; agentverse/environments/tasksolving_env/per.py:90-95
-
-final_answer_selection:
-  rule: 'current_candidate or latest_reviewer_output or "[No candidate submitted]"'
-  candidate_origin: >-
-    current_candidate is set from the Reviewer's "Final Answer For Evaluator:"
-    block when it agrees, otherwise from Executor output.
-  voting: false
-  reviewer_override: >-
-    An allow_reviewer_override escape hatch exists (turn a FAIL into a pass on
-    "[Agree]") but is DISABLED: the config does not set it and the default is False.
-  source: agentverse/environments/tasksolving_env/rules/per.py:520-538, 588, 1151-1160, 1696-1701, 1734
-
-evaluator_invocation:
-  type: llm
-  class: LlmPerEvaluator
-  stateless: true
-  boxed_answer_precheck: 'missing \boxed{} short-circuits to FAIL without an LLM call'
-  hint_call_on_fail: true
-  submissions_per_outer_round: "1 or 2 (see in_round_repair_pass)"
-  feedback_mode: hint
-  source: agentverse/environments/tasksolving_env/rules/evaluator/per.py:451-455, 170-207, 479, 510-516, 529-559
-
-token_accounting:
-  primitive: "usage.prompt_tokens / usage.completion_tokens accumulated per LLM instance"
-  memory_summarizer_tokens: >-
-    COUNTED, and material for PER: Planner and Reviewer have has_summary: true, so
-    the summarizer's own calls add to both tokens and model-call counts.
-  per_example_total: "summed across agents; model calls = total_request_count + summary_request_count"
-  per_example_isolation: "reset_token_counters() per example; see commit b4a2db6ee note in baseline.yaml"
-  source:
-    - agentverse/llms/openai.py:1433-1435
-    - agentverse/memory/chat_history.py:477-489
-    - agentverse/metrics/collector.py:186-247
-
-nominal_model_calls: >-
-  Up to 3 outer rounds x (2 inner x 3 agents + up to 2 evaluator submissions +
-  up to 3 repair-pass agent calls), plus summarizer calls. A first-round pass
-  was observed at 12 total model calls in the released traces.
-
-model_settings:
-  llm_type: gpt-3.5-turbo   # registry alias, NOT the served model
-  model: openai/gpt-oss-120b
-  temperature: 0
-  max_tokens: 4096
-  source: configs/paper/per_hint_llm/config.yaml:217-220, 234-237, 257-260
+      Requirements:
+        - Decide whether the submitted candidate final answer is mathematically equivalent to the ground truth.
+        - Focus on the final answer, not stylistic wording.
+        - The reference material may include both the final answer and an official solution. Use the official solution only to understand the intended reasoning and diagnose mismatch type.
+        - The repair hint must be tailored to the current extracted Reviewer/MAS final answer, the ground-truth final answer, and the official solution. Do not recycle a previous hint unless the current final answer and mismatch type are unchanged.
+        - If the current final answer changed, diagnose the new mismatch type, for example wrong value, incomplete list, placeholder, wrong answer shape, missing cases, or insufficient generality.
+        - The ground truth may be a number, fraction, algebraic expression, formula, set/list of answers, family of functions, inequality, or symbolic condition.
+        - If the submission gives isolated numbers/examples but the problem asks for all objects, a formula/equation, a condition, or a classification, the hint should explicitly flag an answer-shape or generality mismatch without naming the missing answer.
+        - For prompts such as "find all", "for each", "all positive integers", "all functions", or "explicit form", check that the answer is a complete universal statement/family, not just tested cases.
+        - Treat mathematically equivalent formulas, reordered sets, and equivalent quantified statements as correct.
+        - Do not reveal, quote, restate, or hint at the ground truth or official solution in your response.
+        - Output a clear verdict label: `Verdict: PASS` or `Verdict: FAIL`.
+        - If the answer is equivalent, output `Correctness: 1`.
+        - Otherwise output `Correctness: 0` and give a short non-leaking repair hint that names the kind of mismatch without revealing the ground truth, for example: wrong answer type, incomplete family, missing cases, only an example, over-specific numeric answer when a general condition/equation/family is required, unsupported generalization, or formatting/boxing issue.
+    append_prompt: |-
+      Output format:
+      Verdict: PASS or FAIL
+      Correctness: 0 or 1
+      Response: <brief non-leaking repair hint; mention answer-shape/generality if relevant, without revealing the gold answer>
+provenance:
+  derived_from_config: AgentVerse/configs/paper/per_hint_llm/config.yaml
+  derived_from_benchmark: AgentVerse/configs/paper/per_hint_llm/benchmark.yaml
+  upstream_env_type: task-per
+  upstream_rule_class: agentverse/environments/tasksolving_env/rules/per.py::PerRule
+  upstream_evaluator_type: llm
+  upstream_evaluator_class: agentverse/environments/tasksolving_env/rules/evaluator/per.py::LlmPerEvaluator
+  upstream_output_parsers:
+    planner: mgsm
+    executor: mgsm
+    reviewer: mgsm-critic-route
+    evaluator: mgsm-evaluator
+  prompts_copied_verbatim: true
+  port_location: src/protocol_routing_exec/protocols.py
+  gemma_variant_differences: configs/paper/different_model_family/*_gemma4_31b_eval_oss120b/config.yaml
+    uses IDENTICAL prompts and rule structure but actor max_tokens 2048 instead of 4096, failed_attempt_memory_limit
+    1 and candidate_revision_memory_limit 2 instead of 3 and 5. The evaluator stays gpt-oss-120b at
+    max_tokens 4096 in every variant.

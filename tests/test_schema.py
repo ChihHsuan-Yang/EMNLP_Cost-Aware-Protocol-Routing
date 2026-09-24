@@ -193,10 +193,22 @@ def test_protocol_config_is_loadable_and_documents_the_required_fields(repo_root
 
 
 def test_all_four_protocol_configs_exist_and_are_distinct(repo_root):
-    ids = set()
+    """The four execution configs must name the four protocols, once each.
+
+    Config files use the paper's short display spellings ("per"); the released
+    per-problem tables use the longer research spellings
+    ("planner_executor_reviewer").  Both are legitimate, so resolve through
+    ``canonical_protocol`` rather than comparing raw strings -- otherwise this
+    test enforces one arbitrary vocabulary over another and breaks whenever a
+    config is written in the other one.
+    """
+    resolved = set()
     for name in ("baseline", "single", "per", "broadcast"):
-        ids.add(io.read_yaml(repo_root / "configs" / "protocols" / f"{name}.yaml")["protocol_id"])
-    assert ids == {p.value for p in ORACLE_ORDER}
+        raw = io.read_yaml(
+            repo_root / "configs" / "protocols" / f"{name}.yaml"
+        )["protocol_id"]
+        resolved.add(canonical_protocol(raw))
+    assert resolved == set(ORACLE_ORDER)
 
 
 def test_models_and_router_configs_load(repo_root):

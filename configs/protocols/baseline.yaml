@@ -1,135 +1,145 @@
-# Baseline protocol -- direct one-shot answer.
+# ===========================================================================
+# PROTOCOL 1 of 4: BASELINE
+# ===========================================================================
+# One solver call, one judge call. No feedback, no revision, no second agent.
+# This is the cost floor and the correctness reference point for the others.
 #
-# PROVENANCE. Every field below is transcribed from the execution configs and
-# code in the AgentVerse research repository that produced the released
-# outcomes. Field-level sources are given as `source:` keys using
-# repository-relative paths. Nothing here is inferred from behaviour or filled
-# in from a plausible default; fields that could not be established from source
-# carry `unknown: true` and name what was searched.
+# CONTROL FLOW
+#   solver(problem) -> candidate
+#   evaluate(candidate)          # box gate, then ONE judge call
+#   stop                         # max_rounds is 1: a FAIL cannot trigger a retry
 #
-# THIS FILE DOES NOT EXECUTE ANYTHING. protocol_routing is the OFFLINE analysis
-# half of the pipeline. Running this protocol requires an LLM endpoint and the
-# AgentVerse execution stack; see README "Inference-requiring steps".
+# WHY THE BASELINE IS INFORMATION-STARVED BY DESIGN (two separate mechanisms)
+#   1. include_hint_on_fail: false -> the evaluator makes ONE call, not two,
+#      so no repair hint is ever generated at all.
+#   2. reviewer_feedback_mode: plain -> even the verdict call's advice text is
+#      DISCARDED and replaced by a canned string.
+#   Upstream hard-codes both regardless of what the config says
+#   (rules/single_llm_benchmark.py:44 and :142). They are written out here so
+#   the behaviour is legible rather than implicit.
+#
+# RULE PARAMETERS IN THIS FILE
+#   evaluator_dimensions               Field names the judge parser looks for. ONLY 'Correctness' is read at runtime; 'Verdict:' is never parsed.
+#   include_hint_on_fail               On FAIL, make a SECOND judge call for a repair hint. false = one judge call total.
+#   reviewer_feedback_mode             'hint' = the judge's real repair hint reaches the next attempt. 'plain' = that text is DISCARDED for a canned string.
+#   max_rounds                         Outer attempts. The loop stops the moment the evaluator returns PASS.
+#
+# RETRY POLICY. max_retry (per role, below) is the number of times a role's
+# call+parse is retried before the turn is given up on; 10 in every paper
+# config. Transport-level retry for HTTP 429/5xx is separate and lives in
+# the provider config (transport.max_retries).
+#
+# TOKEN ACCOUNTING. Counted from the server's usage object per call, summed
+# per role and in total, written to token_counts.json. Both the logical call
+# count and the HTTP attempt count are recorded.
+#
+# EVALUATOR INVOCATION. type 'llm' for all four protocols. A box gate runs
+# FIRST: no \boxed{...} in the candidate means the judge is NEVER CALLED and
+# the item is recorded FAIL with direct_protocol_fail. The judge is
+# gpt-oss-120b for EVERY paper run including the Gemma-solver runs -- verified
+# across all 73 config.yaml files under configs/paper/.
+#
+# All prompt strings below are copied VERBATIM from the source config named in
+# the provenance block. Placeholders use ${name} and are substituted with
+# string.Template.safe_substitute; do not rename them.
+# ===========================================================================
 
-protocol_id: baseline_llm
-display_name: Baseline
-description: >-
-  A single solver call answers the problem directly, followed by one evaluator
-  call that judges correctness. There is no revision, no feedback loop and no
-  second agent.
-
-source_config: configs/paper/baseline_llm/config.yaml
-source_header_comment: "One-shot direct baseline: one solver call, one evaluator call, judge-only."
-
+protocol_id: baseline
+name: baseline-llm
+prompt_version: omni_math_v1
+evaluator_model_config: gpt_oss_120b.yaml
+max_rounds: 1
+rule:
+  evaluator_dimensions:
+  - Correctness
+  include_hint_on_fail: false
+  reviewer_feedback_mode: plain
 roles:
-  - name: Solo
+  solver:
+    name: Solo
     agent_type: solver
     role_description: BaselineLLM
     max_retry: 10
-    memory_type: chat_history
+    max_tokens: 4096
     output_parser: dummy
-    source: configs/paper/baseline_llm/config.yaml:79-94
-  - name: Evaluator
+    memory_type: chat_history
+    prepend_prompt: |-
+      You are an experienced educator in the field of MATHEMATICS.
+
+      Problem:
+      ${task_description}
+
+      Instructions:
+      - Solve the problem directly and give your best final answer in one attempt.
+      - Infer the required answer shape from the problem statement before committing to a final answer.
+      - The final answer may be a number, fraction, algebraic formula, set/list of tuples, family of functions, condition, inequality, or symbolic statement such as `n \\neq 5`.
+      - If the problem asks for all solutions / all functions / explicit form / all valid integers, do not answer with only one example or one tested case.
+      - Prefer exact symbolic forms over decimals unless approximation is explicitly requested.
+      - Your final TWO non-empty lines MUST be exactly:
+        `Final Answer: <answer>`
+        `\\boxed{<answer>}`
+      - The final boxed line must contain ONLY `\\boxed{<answer>}` and nothing else.
+      - Do NOT wrap the final boxed answer in `\\(` `\\)` `$` `$$` `\\[` `\\]`, `\\text{}`, or any other extra formatting.
+      - Do NOT put `\\boxed{...}` on the same line as `Final Answer:`.
+      - If you do not follow this exact two-line format, the evaluator may treat the final answer as missing.
+    append_prompt: |-
+      Be concise but mathematically complete.
+      Do not output more than one boxed final answer.
+      Do not end with discussion text after the boxed final answer.
+      End exactly with:
+      Final Answer: <answer>
+      \boxed{<answer>}
+  evaluator:
+    name: Evaluator
     agent_type: evaluator
     role_description: Evaluator
     max_retry: 10
-    memory_type: chat_history
+    max_tokens: 4096
     output_parser: mgsm-evaluator
-    source: configs/paper/baseline_llm/config.yaml:96-113
+    memory_type: chat_history
+    prepend_prompt: |-
+      You are the Evaluator for a Baseline LLM math reasoning benchmark.
 
-environment:
-  env_type: task-single-llm-benchmark
-  max_rounds: 1
-  source: configs/paper/baseline_llm/config.yaml:4,68-76
+      Problem:
+      ${task_description}
 
-turns:
-  max_rounds: 1
-  inner_rounds: null   # not applicable: this environment has no inner loop
-  source: configs/paper/baseline_llm/config.yaml:4
+      Solver final submission:
+      ${solution}
 
-stopping_rule:
-  rule: "success OR cnt_turn >= max_rounds"
-  effective_behaviour: >-
-    With max_rounds=1 the loop executes exactly one round unconditionally. The
-    evaluator verdict determines pass/fail but cannot trigger another attempt.
-  implementation: agentverse/environments/tasksolving_env/single_llm_benchmark.py:60-61
-  driver_loop: agentverse/tasksolving.py:270-274
+      Ground truth / evaluator-only reference material:
+      ${result}
 
-retry_policy:
-  agent_level:
-    max_retry: 10
-    scope: "parse failure or any exception from the LLM call"
-    on_exhaustion: >-
-      The agent does NOT raise. It emits an empty message (content="") and the
-      round proceeds. Every retry is a real billed API call and is counted in
-      token accounting.
-    source: agentverse/agents/tasksolving_agent/solver.py:71-93
-  transport_level:
-    rate_limit_max_attempts: 7      # env AGENTVERSE_RATE_LIMIT_MAX_ATTEMPTS
-    rate_limit_backoff_cap_sec: 60  # env AGENTVERSE_RATE_LIMIT_BACKOFF_CAP
-    transient_max_attempts: 4       # env AGENTVERSE_TRANSIENT_MAX_ATTEMPTS
-    transient_backoff_cap_sec: 8    # env AGENTVERSE_TRANSIENT_BACKOFF_CAP
-    counted_in_tokens: false        # a failed transport retry returns no usage object
-    source: agentverse/llms/openai.py:167-172, 751-810
-
-context_and_memory:
-  memory_type: chat_history
-  reset_between_rounds: true
-  reset_detail: >-
-    The solver and evaluator are reset at the start of every round. With
-    max_rounds=1 this is moot for Baseline.
-  full_question_history: "max_history = 0 via _enable_full_question_history"
-  source: agentverse/environments/tasksolving_env/rules/single_llm_benchmark.py:73-84
-
-final_answer_selection:
-  rule: "the solver's own output text"
-  implementation: 'final_result = submitted_text.strip() or "[No solver output]"'
-  voting: false
-  source: agentverse/environments/tasksolving_env/rules/single_llm_benchmark.py:226
-
-evaluator_invocation:
-  type: llm
-  class: LlmPerEvaluator
-  stateless: true                  # astep(..., use_memory=False)
-  boxed_answer_precheck: >-
-    If no \boxed{} answer is present the evaluator is NOT called: the submission
-    is a hard FAIL with reason "missing_boxed_final_answer".
-  hint_call_on_fail: false
-  hint_call_detail: >-
-    Baseline is judge-only and passes include_hint_on_fail=False, so a FAIL
-    costs one evaluator call, not two. The config's reviewer_feedback_mode is
-    "plain" because the solver prompt has no ${advice} slot to consume feedback.
-  verdict_parser: "mgsm-evaluator; regex Correctness:\\s*(\\d)"
-  source:
-    - agentverse/environments/tasksolving_env/rules/evaluator/per.py:451-455, 170-207, 510-516
-    - agentverse/environments/tasksolving_env/rules/single_llm_benchmark.py:41-44, 142
-    - agentverse/output_parser/output_parser.py:515-546
-
-token_accounting:
-  primitive: >-
-    total_prompt_tokens and total_completion_tokens accumulate the API response's
-    usage.prompt_tokens / usage.completion_tokens per LLM instance.
-  memory_summarizer_tokens: "counted separately and added in (not used by Baseline)"
-  per_example_total: >-
-    Summed across all agents in the environment; total_model_calls is the sum of
-    each agent's total_request_count (plus summary_request_count).
-  per_example_isolation: >-
-    Counters are zeroed per example via reset_token_counters(). Runs made BEFORE
-    commit b4a2db6ee carried counters across problems within a worker and are
-    tagged legacy_worker_cumulative_metrics_before_counter_reset_fix_b4a2db6ee.
-  source:
-    - agentverse/llms/openai.py:1433-1435
-    - agentverse/metrics/collector.py:186-247
-    - agentverse/environments/base.py:94-131
-    - agentverse/tasksolving.py:320-321
-
-nominal_model_calls: 2   # 1 solver + 1 evaluator verdict, before any retries
-
-model_settings:
-  # As written in the Omni-MATH config. Other benchmark slices substitute a
-  # different actor model; see configs/models.yaml.
-  llm_type: gpt-3.5-turbo   # a registry alias, NOT the served model
-  model: openai/gpt-oss-120b
-  temperature: 0
-  max_tokens: 4096
-  source: configs/paper/baseline_llm/config.yaml:89-92, 106-109
+      Requirements:
+        - Decide whether the final answer is mathematically equivalent to the ground truth.
+        - Focus on the final answer, not stylistic wording.
+        - The reference material may include both the final answer and an official solution. Use the official solution only to understand the intended reasoning and diagnose mismatch type.
+        - The repair hint must be tailored to the current extracted final answer, the ground-truth final answer, and the official solution. Do not recycle a generic hint unless the current final answer and mismatch type are unchanged.
+        - If the current final answer changed, diagnose the new mismatch type, for example wrong value, incomplete list, placeholder, wrong answer shape, missing cases, or insufficient generality.
+        - The ground truth may be a number, fraction, algebraic expression, formula, set/list of answers, family of functions, inequality, or symbolic condition.
+        - If the submission gives isolated numbers/examples but the problem asks for all objects, a formula/equation, a condition, or a classification, explicitly flag an answer-shape or generality mismatch without naming the missing answer.
+        - For prompts such as "find all", "for each", "all positive integers", "all functions", or "explicit form", check that the answer is a complete universal statement/family, not just tested cases.
+        - Treat mathematically equivalent formulas, reordered sets, and equivalent quantified statements as correct.
+        - Do not reveal, quote, restate, or hint at the ground truth or official solution in your response.
+        - Output a clear verdict label: `Verdict: PASS` or `Verdict: FAIL`.
+        - If the answer is equivalent, output `Correctness: 1`.
+        - Otherwise output `Correctness: 0` and give a short non-leaking repair hint that names the kind of mismatch without revealing the ground truth, for example: wrong answer type, incomplete family, missing cases, only an example, over-specific numeric answer when a general condition/equation/family is required, unsupported generalization, or formatting/boxing issue.
+    append_prompt: |-
+      Output format:
+      Verdict: PASS or FAIL
+      Correctness: 0 or 1
+      Response: <brief non-leaking repair hint; mention answer-shape/generality if relevant, without revealing the gold answer>
+provenance:
+  derived_from_config: AgentVerse/configs/paper/baseline_llm/config.yaml
+  derived_from_benchmark: AgentVerse/configs/paper/baseline_llm/benchmark.yaml
+  upstream_env_type: task-single-llm-benchmark
+  upstream_rule_class: agentverse/environments/tasksolving_env/rules/single_llm_benchmark.py::SingleLLMBenchmarkRule
+  upstream_evaluator_type: llm
+  upstream_evaluator_class: agentverse/environments/tasksolving_env/rules/evaluator/per.py::LlmPerEvaluator
+  upstream_output_parsers:
+    solver: dummy
+    evaluator: mgsm-evaluator
+  prompts_copied_verbatim: true
+  port_location: src/protocol_routing_exec/protocols.py
+  gemma_variant_differences: configs/paper/different_model_family/*_gemma4_31b_eval_oss120b/config.yaml
+    uses IDENTICAL prompts and rule structure but actor max_tokens 2048 instead of 4096. The evaluator
+    stays gpt-oss-120b at max_tokens 4096 in every variant.

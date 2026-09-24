@@ -1,0 +1,39 @@
+# ===========================================================================
+# DATASET: synthetic smoke fixture (NOT a benchmark)
+# ===========================================================================
+# Six hand-written problems used only to exercise the pipeline with the mock
+# backend. No benchmark text. Never report a number measured on this file.
+# ===========================================================================
+
+dataset_id: fixture_tiny_math
+display_name: Synthetic smoke fixture
+version: trackb-fixture-v1
+domain: synthetic
+
+loader: omni-math          # same schema and same answer_number-first priority
+path: fixtures/tiny_math.jsonl
+expected_rows: 6
+
+obtain:
+  upstream_url: null
+  pinned_revision: null
+  note: Written for this release; ships in the repository.
+
+filtering:
+  rule: None. All six rows are used.
+
+field_mapping:
+  input:              [question, problem]
+  answer:             [answer_number, answer, label]
+  reference_solution: [equation_solution, equation_answer, solution]
+  metadata_passthrough:
+    [dataset_name, source, difficulty, difficulty_tier, domain, judge_type,
+     raw_difficulty]
+
+field_mapping_warning: >-
+  These rows deliberately set "answer": "None" with the real value in
+  answer_number, reproducing the Omni-MATH quirk. If a change to the loader
+  ever breaks that priority, this fixture fails loudly instead of silently
+  scoring everything against the string "None".
+
+license: CC-BY-4.0 (written for this release)
