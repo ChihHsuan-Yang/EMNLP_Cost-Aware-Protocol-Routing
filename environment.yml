@@ -1,0 +1,19 @@
+# Conda environment for the OFFLINE analyses.
+#
+# Everything in this package runs on a laptop CPU in seconds to minutes. There
+# is no GPU dependency, no HPC dependency, and no LLM client: reproducing the
+# protocol EXECUTION is a separate, inference-requiring step (see README).
+name: protocol-routing
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.9
+  - numpy>=1.21
+  - pandas>=1.3
+  - scikit-learn>=1.0
+  - pyyaml>=5.4
+  - matplotlib>=3.4
+  - pytest>=7.0
+  - pip
+  - pip:
+      - -e .

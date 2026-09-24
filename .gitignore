@@ -1,0 +1,32 @@
+# Environments
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Credentials -- never commit
+.env
+.env.*
+!.env.example
+*.pem
+id_rsa*
+
+# Data downloaded at runtime (fetched from Hugging Face, not committed)
+data/emnlp_protocol_routing/
+outputs/
+
+# Tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://chihhsuan-yang.github.io/EMNLP_Cost-Aware-Protocol-Routing/sitemap.xml

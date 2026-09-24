@@ -1,0 +1,59 @@
+cff-version: 1.2.0
+message: "If you use this software or dataset, please cite the paper."
+title: "LLMs Can Predict Failure Risk, But Struggle to Predict Which Collaboration Protocol Pays Off: Cost-Aware Protocol Routing Across Reasoning Tasks"
+abstract: >-
+  Research artifact for the EMNLP 2026 paper on cost-aware protocol routing.
+  Releases matched four-protocol outcomes, fixed-order oracle labels, held-out
+  router evaluations, and post-answer confidence analyses across ten
+  model-condition settings.
+authors:
+  - family-names: Yang
+    given-names: Chih-Hsuan
+    affiliation: Argonne National Laboratory
+    email: bellayang@anl.gov
+  - family-names: Jiang
+    given-names: Jingyan
+    affiliation: Argonne National Laboratory
+  - family-names: Yang
+    given-names: Cheng-Hau
+    affiliation: Argonne National Laboratory
+  - family-names: Vasudevan
+    given-names: Vikram
+    affiliation: Oregon State University
+  - family-names: Zheng
+    given-names: Huihuo
+    affiliation: Argonne National Laboratory
+  - family-names: Vishwanath
+    given-names: Venkatram
+    affiliation: Argonne National Laboratory
+  - family-names: Thakur
+    given-names: Rajeev
+    affiliation: Argonne National Laboratory
+identifiers:
+  - type: other
+    value: "arXiv:2608.14927"
+    description: arXiv preprint
+url: "https://chihhsuan-yang.github.io/EMNLP_Cost-Aware-Protocol-Routing/"
+repository-code: "https://github.com/ChihHsuan-Yang/EMNLP_Cost-Aware-Protocol-Routing"
+license: MIT
+preferred-citation:
+  type: article
+  title: "LLMs Can Predict Failure Risk, But Struggle to Predict Which Collaboration Protocol Pays Off: Cost-Aware Protocol Routing Across Reasoning Tasks"
+  authors:
+    - family-names: Yang
+      given-names: Chih-Hsuan
+    - family-names: Jiang
+      given-names: Jingyan
+    - family-names: Yang
+      given-names: Cheng-Hau
+    - family-names: Vasudevan
+      given-names: Vikram
+    - family-names: Zheng
+      given-names: Huihuo
+    - family-names: Vishwanath
+      given-names: Venkatram
+    - family-names: Thakur
+      given-names: Rajeev
+  year: 2026
+  journal: "arXiv preprint arXiv:2608.14927"
+  url: "https://arxiv.org/abs/2608.14927"

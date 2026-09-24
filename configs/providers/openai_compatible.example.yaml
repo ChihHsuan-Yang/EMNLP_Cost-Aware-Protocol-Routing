@@ -1,0 +1,50 @@
+# ===========================================================================
+# PROVIDER: any OpenAI-compatible chat-completions endpoint
+# ===========================================================================
+# Copy this file, adjust if needed, and run. It contains NO credential and NO
+# endpoint address, and it never will: the runner reads both from environment
+# variables at call time, records only the VARIABLE NAMES in the manifest, and
+# refuses to write an artifact containing a value under a key named api_key,
+# token, secret, authorization or base_url.
+#
+#   export INFERENCE_BASE_URL="https://your-endpoint.example.com/v1"
+#   export INFERENCE_API_KEY="..."
+#
+# The runner POSTs to {INFERENCE_BASE_URL}/chat/completions with a Bearer
+# token. Anything speaking that dialect works: vLLM, SGLang, llama.cpp server,
+# Ollama's OpenAI shim, TGI, or a hosted API.
+# ===========================================================================
+
+provider_type: openai_compatible
+
+endpoint:
+  base_url_env: INFERENCE_BASE_URL
+  api_key_env: INFERENCE_API_KEY
+  send_auth_header: true      # set false for a local server needing no key
+  extra_headers: {}           # e.g. {X-Org-Id: ...}; do NOT put a secret here
+
+transport:
+  # Applies to HTTP 429 and 5xx and to connection/timeout errors. A 4xx that
+  # is not 429 fails immediately -- retrying a malformed request is pointless.
+  max_retries: 7
+  backoff_cap_seconds: 60.0
+  timeout_seconds: 600.0
+
+transport_provenance: >-
+  max_retries 7 and backoff cap 60s mirror the original engine's rate-limit
+  budget (agentverse/llms/openai.py:169-170,
+  _RATE_LIMIT_MAX_ATTEMPTS / _RATE_LIMIT_BACKOFF_CAP). timeout 600s mirrors the
+  async client's explicit timeout (openai.py:1273). SIMPLIFICATION: the
+  original kept a SEPARATE, shorter 4-attempt / 8-second budget for transient
+  connection errors; this runner uses one budget for both classes.
+
+concurrency:
+  max_workers: 1
+  note: >-
+    This runner is sequential. The original used a cross-process token-bucket
+    throttle (20 req/s ceiling, soft limit 18) because many shards shared one
+    endpoint. If you parallelise, add your own rate limiting -- and record it,
+    because throughput shaping changes 429 rates and therefore retry counts.
+  historical_reference: >-
+    max_workers values observed in the released run manifests: 3 and 8. Those
+    were the confidence probe, not protocol execution.

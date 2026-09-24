@@ -1,0 +1,89 @@
+# Primary paper split and the routers evaluated on it.
+#
+# This is the 423-problem held-out evaluation reported in the main routing
+# table. Fully OFFLINE: every policy here is a replay over already-observed
+# outcomes.
+
+split:
+  name: primary_80_10_10_seed42
+  scheme: stratified
+  stratify_by: oracle_label
+  train_ratio: 0.8
+  dev_ratio: 0.1
+  test_ratio: 0.1
+  seed: 42
+  expected_test_n: 423
+  note: >-
+    Stratification is by the oracle label. Within each label the ids are sorted
+    and then shuffled with a label-specific seed derived from `seed`, so the
+    assignment does not depend on input row order.
+
+routers:
+  tier_majority:
+    kind: heuristic
+    description: >-
+      Train-split metadata-only reference. Predict the majority oracle label
+      within the problem's difficulty tier; fall back to the train-split global
+      majority for an unseen tier.
+    tier_column: difficulty_tier
+    tie_break: cheaper protocol wins
+    requires_inference: false
+
+  metadata_only_logreg:
+    kind: learned
+    description: Multinomial logistic regression on metadata features only.
+    features: [source, domain, difficulty, difficulty_tier]
+    text_features: false
+    requires_inference: false
+
+  text_metadata_logreg:
+    kind: learned
+    description: >-
+      The main learned router. TF-IDF (1-2 grams, min_df 2, max 20000 features)
+      over the problem statement, concatenated with the metadata features.
+    features: [problem, source, domain, difficulty, difficulty_tier]
+    text_features: true
+    requires_inference: false
+
+  self_confidence_gate:
+    kind: confidence
+    description: >-
+      Keep Baseline if the post-answer self-confidence is >= 70, else escalate to
+      Single. That binary rule is the entire policy; it never routes to PER or
+      Broadcast.
+    threshold: 70
+    requires_inference: true
+    requires_inference_detail: >-
+      The GATE is offline, but eliciting the confidence score is a model call.
+      Scoring the gate from a released confidence table is offline.
+
+  frozen_llm_router:
+    kind: frozen_api
+    description: >-
+      One prompt, one model call per problem, asking a frozen LLM to name the
+      protocol. Evaluated offline against the same benchmark.
+    requires_inference: true
+
+  fixed_order_oracle:
+    kind: retrospective
+    description: >-
+      Not a router. The retrospective upper bound: the first successful protocol
+      in the fixed order. Reported as a ceiling, never as a deployable policy.
+    requires_inference: false
+
+hyperparameters:
+  grid:
+    C: [0.25, 1.0, 4.0]
+    class_weight: [null, balanced]
+  selected_on: dev
+  selection_metric: dev macro-F1
+  refit_before_test: train+dev
+
+bootstrap:
+  resamples: 2000
+  interval: percentile
+  alpha: 0.05
+  unit: problem
+  meaning: >-
+    Benchmark-problem sampling uncertainty. NOT repeated-run uncertainty: each
+    protocol was executed once per problem.

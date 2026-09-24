@@ -1,0 +1,91 @@
+# ===========================================================================
+# DATASET: SciBench (text-only slice)
+# ===========================================================================
+# College-level science problems from textbooks, mostly numeric or short
+# answer, frequently with units.
+#
+# READ THE ROW-COUNT NOTE. There are THREE different numbers in play and
+# conflating them will make your rerun look wrong.
+# ===========================================================================
+
+dataset_id: scibench
+display_name: SciBench (text-only)
+version: "prepare_science_benchmarks-text_only"
+domain: science
+
+loader: jsonl
+path: ${DATA_ROOT}/science-benchmarks/scibench/text_only/all.jsonl
+expected_rows: 574         # rows in the text_only slice ON DISK
+
+obtain:
+  upstream_url: https://github.com/mandyyyyii/scibench
+  pinned_revision:
+    unknown: true
+    comment: >-
+      Cloned with no pinned commit by scripts/prepare_science_benchmarks.py.
+      Searched: that script, data/science-benchmarks/{README.md,manifest.json},
+      and the release registry. No hash recorded anywhere.
+  build_command: |
+    python scripts/prepare_science_benchmarks.py --fetch-sources --datasets scibench
+
+row_counts_explained:
+  full_slice_on_disk: 580
+  text_only_slice_on_disk: 574
+  executed_in_paper: 565
+  explanation: >-
+    580 is the full converted slice. The text-only filter drops 6 rows that
+    need a missing figure or table, leaving 574 -- both counts verified by
+    wc -l on data/science-benchmarks/scibench/. The paper executed 565 of those
+    574. The 9-row gap is documented on the release side, not the data-prep
+    side: /tmp/emnlp_release/hf_dataset_staging/registry/benchmarks.csv records
+    "text_only slice, 565 of 574 text-only rows executed", and
+    hf_dataset_staging/docs/reconstruction.md attributes part of the gap to
+    reused identifiers. Set expected_rows to 574 to validate the BUILD; expect
+    565 rows when comparing against the paper's released outcomes.
+  reconciliation_status:
+    unknown: true
+    comment: >-
+      The exact identity of the 9 unexecuted rows is NOT established from the
+      execution side. Searched: data/science-benchmarks/{README.md,
+      manifest.json}, scripts/prepare_science_benchmarks.py, every
+      configs/paper/science_qa/**/benchmark.yaml (all of which point at
+      jeebench, not scibench -- see the note below). The released outcome table
+      is the authority on which 565 ran.
+
+config_gap:
+  unknown: true
+  comment: >-
+    No checked-in AgentVerse config points at a SciBench dataset_path. Every
+    configs/paper/science_qa/**/benchmark.yaml sets
+    dataset_path: data/science-benchmarks/jeebench/all.jsonl. The SciBench runs
+    were therefore launched with a --dataset_path override on the command line
+    rather than from a committed config, and the overriding launch command is
+    not recoverable from the repository. Searched: all 8 science_qa
+    benchmark.yaml files, configs/paper/README.md, and the science-QA job
+    launcher under jobs/. Use the jeebench science_qa configs
+    with this dataset config to reproduce the intended setup.
+
+filtering:
+  rule: >-
+    Same conservative phrase-based missing-artifact filter as JEEBench.
+  rows_excluded_missing_artifact: 6
+
+field_mapping:
+  input:              [input, question, problem]
+  answer:             [answer, answer_number, label]
+  reference_solution: [reference_solution, solution]
+  metadata_passthrough: >-
+    id, source (textbook), problem_id, unit, question_type, license.
+  units_note: >-
+    Gold answers frequently carry units, e.g. "5654.86677646 $\mathrm{ft}^3$",
+    and a separate unit-free `answer_number` exists. The paper used the
+    unit-bearing `answer` because the JSONL loader reads it first. The LLM judge
+    is expected to handle unit equivalence; there is no numeric tolerance.
+
+paper_use:
+  executed_rows: 565
+  settings: [scibench__text_only__gpt_oss_120b, scibench__text_only__gemma_4_31b]
+  protocols: [baseline, single, per, broadcast]
+
+license: MIT
+redistribution: ids and outcomes only; problem text withheld.

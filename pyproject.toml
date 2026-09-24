@@ -1,0 +1,77 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "protocol-routing"
+version = "0.1.0"
+description = "Offline analysis code for cost-aware collaboration-protocol routing (EMNLP 2026)."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+keywords = ["multi-agent", "llm", "routing", "reproducibility", "nlp"]
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+# Deliberately small, and floors rather than hard pins: this package does
+# arithmetic over CSVs and fits a logistic regression. Hard pins would make the
+# artifact rot without making it more reproducible -- the reproducibility here
+# comes from seeded RNG and exact-match table diffs, not from frozen wheels.
+dependencies = [
+    "numpy>=1.21",
+    "pandas>=1.3",
+    "scikit-learn>=1.0",
+    "pyyaml>=5.4",
+    "matplotlib>=3.4",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=7.0"]
+lint = ["ruff>=0.1"]
+dev = ["pytest>=7.0", "ruff>=0.1"]
+
+[project.urls]
+Paper = "https://arxiv.org/abs/2608.14927"
+
+[project.scripts]
+protocol-routing-tables = "protocol_routing.cli:reproduce_tables_main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = [
+    # sklearn's saga solver warns about convergence on the 24-row fixture.
+    # That is expected at fixture scale and is not a code defect.
+    "ignore::UserWarning:sklearn.linear_model._sag",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py39"
+src = ["src", "scripts", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = [
+    "E501",   # long lines in docstrings that explain conventions
+    "UP006",  # keep py39-compatible typing in runtime signatures
+    "UP035",
+    "UP045",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*.py" = ["E402"]   # _bootstrap_path must run before package imports
+"tests/*.py" = ["B011"]

@@ -1,0 +1,29 @@
+# ===========================================================================
+# PATHS -- every one an environment variable with no default
+# ===========================================================================
+# Nothing here points at a real machine. There is deliberately no fallback to
+# a home directory, a scratch filesystem, or any cluster path: a missing
+# variable should fail loudly, not silently write somewhere surprising.
+# ===========================================================================
+
+data_root: ${DATA_ROOT}
+# Parent of the built benchmark slices. The dataset configs resolve their
+# `path` against it, expecting this layout:
+#   ${DATA_ROOT}/omni-math-2-filtered/all.jsonl
+#   ${DATA_ROOT}/science-benchmarks/jeebench/all.jsonl
+#   ${DATA_ROOT}/science-benchmarks/scibench/text_only/all.jsonl
+#   ${DATA_ROOT}/lab-bench-public/llm_strict/all.jsonl
+#   ${DATA_ROOT}/lab-bench-public/text_no_tool/all.jsonl
+
+output_root: ${OUTPUT_ROOT}
+# Parent for run directories. Suggested naming, which keeps the four protocol
+# runs of one cell adjacent:
+#   ${OUTPUT_ROOT}/<dataset>__<model>/<protocol>/
+
+model_cache_dir: ${MODEL_CACHE_DIR}
+# Only needed if you SERVE the models yourself. The runner never loads weights;
+# it only speaks HTTP.
+
+hf_home: ${HF_HOME}
+# Hugging Face cache, for downloading the benchmark sources during the dataset
+# build step. Not used at run time.

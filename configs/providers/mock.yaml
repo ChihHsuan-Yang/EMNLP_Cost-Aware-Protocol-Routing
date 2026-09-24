@@ -1,0 +1,49 @@
+# ===========================================================================
+# PROVIDER: MOCK -- deterministic, offline, zero network, zero cost
+# ===========================================================================
+# Exercises the ENTIRE four-protocol pipeline with no endpoint and no API key:
+# every role, the box gate, both judge calls, PER routing, broadcast polling
+# and approval voting, the outer retry loop, and every run artifact.
+#
+# WHAT IT IS NOT: a model. Responses are scripted from a SHA-256 hash of the
+# prompt. Nothing is solved. ACCURACY FROM A MOCK RUN IS MEANINGLESS BY
+# CONSTRUCTION and must never be reported as a result. Only the plumbing is
+# under test.
+#
+#   python run_protocol.py --provider-config configs/providers/mock.yaml ...
+# ===========================================================================
+
+provider_type: mock
+
+mock:
+  seed: 0
+  # hash  : always a hash-derived integer -> almost always FAIL. Exercises the
+  #         hint / repair / re-evaluate paths and the full round budget.
+  # gold  : echo the gold answer -> always PASS. Exercises early stopping.
+  # mixed : gold for a deterministic ~gold_rate fraction, hash otherwise.
+  answer_mode: mixed
+  gold_rate: 0.5
+  fail_rate: 0.0        # inject transient connection errors, to test retries
+  malformed_rate: 0.0   # emit responses with NO boxed answer, to test the box gate
+
+determinism: >-
+  Output depends only on (seed, model id, message list). The same command run
+  twice produces byte-identical predictions.jsonl. Token counts are a
+  whitespace-and-punctuation estimate, NOT a tokenizer, so they are internally
+  consistent but not comparable to real usage.
+
+mock_judge: >-
+  A case-and-whitespace-insensitive STRING COMPARISON between the candidate's
+  boxed answer and the gold answer -- not a model, and far stricter than the
+  real LLM judge, which accepts mathematical equivalence. It emits the exact
+  "Verdict:/Correctness:/Response:" format the real parser requires, so the
+  parsing path under test is the real one.
+
+gold_channel: >-
+  The mock needs gold answers to be able to judge, and in answer_mode gold or
+  mixed to be able to produce a "correct" answer at all. It gets them through
+  an OUT-OF-BAND registry: the runner calls provider.register_gold(problem,
+  answer) before the run. GOLD IS NEVER WRITTEN INTO ANY PROMPT -- not the
+  solver's, not the judge's. This is structurally impossible to leak into a
+  real run, because OpenAICompatibleProvider has no register_gold method and
+  the runner only calls it when the attribute exists.

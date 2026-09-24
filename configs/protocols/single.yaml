@@ -1,0 +1,328 @@
+# ===========================================================================
+# PROTOCOL 2 of 4: SINGLE (single-agent iterative self-correction)
+# ===========================================================================
+# One solver retries its own answer, up to max_rounds attempts, guided by the
+# judge's non-leaking repair hint. No second agent is involved.
+#
+# CONTROL FLOW (one outer round)
+#   solver(problem, question_scoped_memory) -> candidate
+#   evaluate(candidate)          # box gate; on FAIL a SECOND judge call
+#                                # produces the repair hint
+#   PASS -> stop.  FAIL -> record the rejected answer + hint, loop.
+#
+# CONTEXT RESET IS THE DEFINING PROPERTY
+#   reset_solver_memory_each_attempt: true. The solver's chat transcript is
+#   cleared before every attempt. The ONLY thing carried between attempts is
+#   the structured question-scoped ledger (rejected answers + judge hints),
+#   injected through ${advice}. This is what makes "one agent iterating"
+#   different from "one long conversation".
+#
+# FIRST ATTEMPT USES A DIFFERENT PROMPT PAIR
+#   There is no prior answer or feedback on attempt 1, so the solver gets
+#   first_attempt_prepend_prompt / first_attempt_append_prompt instead.
+#
+# RULE PARAMETERS IN THIS FILE
+#   evaluator_dimensions               Field names the judge parser looks for. ONLY 'Correctness' is read at runtime; 'Verdict:' is never parsed.
+#   include_hint_on_fail               On FAIL, make a SECOND judge call for a repair hint. false = one judge call total.
+#   reset_solver_memory_each_attempt   Clear the solver transcript before each attempt; only the structured ledger carries over.
+#   reviewer_feedback_mode             'hint' = the judge's real repair hint reaches the next attempt. 'plain' = that text is DISCARDED for a canned string.
+#   max_rounds                         Outer attempts. The loop stops the moment the evaluator returns PASS.
+#
+# RETRY POLICY. max_retry (per role, below) is the number of times a role's
+# call+parse is retried before the turn is given up on; 10 in every paper
+# config. Transport-level retry for HTTP 429/5xx is separate and lives in
+# the provider config (transport.max_retries).
+#
+# TOKEN ACCOUNTING. Counted from the server's usage object per call, summed
+# per role and in total, written to token_counts.json. Both the logical call
+# count and the HTTP attempt count are recorded.
+#
+# EVALUATOR INVOCATION. type 'llm' for all four protocols. A box gate runs
+# FIRST: no \boxed{...} in the candidate means the judge is NEVER CALLED and
+# the item is recorded FAIL with direct_protocol_fail. The judge is
+# gpt-oss-120b for EVERY paper run including the Gemma-solver runs -- verified
+# across all 73 config.yaml files under configs/paper/.
+#
+# All prompt strings below are copied VERBATIM from the source config named in
+# the provenance block. Placeholders use ${name} and are substituted with
+# string.Template.safe_substitute; do not rename them.
+#
+# SCHEMA. This file carries the release-wide protocol-config schema:
+#   protocol_id  display_name  roles  turns  stopping_rule  retry_policy
+#   context_and_memory  final_answer_selection  evaluator_invocation
+#   token_accounting
+# plus a provenance: block naming the source config it was derived from.
+# Anything that could not be established from source is recorded as
+# `unknown: true` with a comment naming exactly where it was looked for. An
+# honest gap is correct; a fabricated value is a release blocker.
+#
+# FOUR THINGS THAT ARE MISLEADING ON SIGHT, each verified against source:
+#   1. `llm_type: gpt-3.5-turbo` in the original configs is a REGISTRY KEY,
+#      not the model. It is popped before construction
+#      (agentverse/initialization.py:20-23) and selects one class that is
+#      registered under gpt-35-turbo / gpt-3.5-turbo / gpt-4 / vllm / local
+#      (openai.py:982-986). The wire model is the separate `model:` field.
+#      No GPT-3.5 was ever called.
+#   2. Broadcast's `memory_mode: summary_plus_recent` NEVER SUMMARISES in
+#      these runs -- see context_and_memory.summary_plus_recent_caveat.
+#   3. A FAILING PER outer round submits to the evaluator TWICE -- see
+#      turns.two_submissions_caveat.
+#   4. Per-problem token counts from runs predating commit b4a2db6ee are
+#      CUMULATIVE, not per-problem -- see
+#      token_accounting.upstream_bug_caveat.
+# ===========================================================================
+
+protocol_id: single
+display_name: Single
+name: single-agent-reflect
+prompt_version: omni_math_v1
+evaluator_model_config: gpt_oss_120b.yaml
+max_rounds: 3
+turns:
+  max_rounds: 3
+  structure: one solver call per outer round; the solver retries its own answer using the judge's repair
+    hint.
+  actor_calls_per_problem: 1 .. 3
+  judge_calls_per_problem: 1 .. 6 (verdict + hint on each FAIL round)
+stopping_rule:
+  rule: Stop as soon as the evaluator returns PASS; otherwise retry until max_rounds attempts are used.
+  outer_loop: while not (success or cnt_turn >= max_rounds)
+  source: environments/tasksolving_env/single_agent_reflect.py:60-61
+retry_policy:
+  role_call_max_retry: 10
+  role_call_max_retry_source: 'configs/paper/single_agent_hint_llm/config.yaml -- `max_retry: 10` on
+    EVERY agent including the evaluator. Upstream this is the number of times an agent''s generate+parse
+    is retried before the turn is abandoned (agentverse/agents/tasksolving_agent/evaluator.py:85-100).'
+  on_role_retry_exhausted: Upstream emits score 0 / empty advice rather than raising, so an agent that
+    never parses is recorded as a wrong answer, NOT as an error. Reproduced; this port additionally
+    sets judge_unparseable true so the case is auditable.
+  transport_max_retries: 7
+  transport_backoff: exponential with full jitter, cap 60s
+  transport_retryable: HTTP 429 and 5xx, connection errors, timeouts. A non-429 4xx fails immediately.
+  transport_source: agentverse/llms/openai.py:169-170 (_RATE_LIMIT_MAX_ATTEMPTS=7, _RATE_LIMIT_BACKOFF_CAP=60).
+    Configurable per provider under configs/providers/*.yaml transport.max_retries.
+  transport_simplification: 'SIMPLIFICATION: upstream kept a SECOND, shorter budget for transient connection
+    errors (4 attempts, 8s cap, openai.py:171-172). This port uses one budget for both classes. Affects
+    resilience, not content.'
+  timeout_seconds: 600.0
+  timeout_source: agentverse/llms/openai.py:1273 (async client timeout=600.0). NOTE the upstream SYNC
+    path set no explicit timeout and stacked SDK-internal retries beneath its own; this port always
+    sets both explicitly.
+context_and_memory:
+  question_scoped: true
+  scope_note: Both ledgers are created fresh per problem and cleared between problems. Neither ever
+    contains the gold answer -- only the model's own rejected answers and the judge's non-leaking hints.
+  reset_solver_memory_each_attempt: true
+  defining_property: The solver's chat transcript is CLEARED before every attempt. The only thing carried
+    between attempts is the structured question-scoped ledger, injected through the ${advice} placeholder.
+    This is what makes 'one agent iterating' different from 'one long conversation'.
+  failed_attempt_memory_limit: 3
+  candidate_revision_memory_limit: 5
+  ledger_contents: rejected answers, the judge's signal, the judge's non-leaking hint, and a repair
+    summary. Ring buffers; oldest entries drop.
+  reviewer_feedback_mode: hint
+  first_attempt_prompt: Attempt 1 uses a distinct prompt pair (first_attempt_prepend_prompt / first_attempt_append_prompt)
+    because there is no prior answer or feedback to reference.
+  simplification: 'SIMPLIFICATION, HIGHEST-RISK IN THIS PORT: upstream attached a rolling LLM-generated
+    summary to some agents'' chat history (has_summary, 300-token summary refreshed every 3 messages).
+    This port passes prior text explicitly through prompt placeholders and runs NO summariser. On long
+    trajectories the agents therefore see materially different context, and the summariser''s own model
+    calls are absent from the token totals.'
+  prompt_token_budget_trimming: 'SIMPLIFICATION: upstream trimmed advice/plan/solution to per-section
+    token budgets with head-tail truncation. Not implemented. Long runs will build larger prompts than
+    the original.'
+final_answer_selection:
+  rule: 'The current attempt''s solver output is the submission. There is no cross-attempt selection:
+    a later attempt REPLACES the earlier one, it does not compete with it.'
+  extraction: extract_boxed, last well-formed box wins.
+evaluator_invocation:
+  type: llm
+  implementation: agentverse/environments/tasksolving_env/rules/evaluator/per.py::LlmPerEvaluator (registered
+    as 'llm', 'agent', 'openai')
+  judge_model: openai/gpt-oss-120b
+  judge_model_config: gpt_oss_120b.yaml
+  judge_model_is_fixed_across_solver_families: true
+  judge_model_evidence: 'Verified by parsing all 73 config.yaml files under configs/paper/: ZERO evaluator
+    agents use any model other than openai/gpt-oss-120b. This holds for the Gemma, Llama and E4B solver
+    bundles too, so the second-family comparison changes the reasoning actors without changing the answer-comparison
+    mechanism.'
+  box_gate:
+    enabled: true
+    behaviour: 'Runs BEFORE any judge call. If the submitted candidate contains no \boxed{...}, the
+      judge is NEVER CALLED: the item is recorded FAIL with direct_protocol_fail true and reason missing_boxed_final_answer,
+      at zero judge cost.'
+    source: rules/evaluator/per.py:179-202 (box_required = True)
+    consequence: A pure formatting failure is indistinguishable in the outcome from a wrong answer,
+      and is cheaper.
+  calls_per_evaluation: 1 on PASS, 2 on FAIL
+  hint_call:
+    include_hint_on_fail: true
+    behaviour: 'On FAIL a SECOND judge call generates the repair hint, with the correctness verdict
+      explicitly PINNED so the second call cannot overturn the first. Source: rules/evaluator/per.py:534-571.'
+  verdict_parsing:
+    parser: mgsm-evaluator
+    dimensions_read:
+    - Correctness
+    caveat: 'MISLEADING ON SIGHT. Every judge prompt demands a `Verdict: PASS|FAIL` line, but the runtime
+      parser reads ONLY `Correctness:\s*(\d)` (output_parser.py:515-546). The Verdict line is decorative
+      at run time and is consumed only by offline analysis, and only as a fallback when Correctness
+      is absent. On a contradiction, Correctness wins.'
+    single_digit_quirk: 'The regex captures ONE digit, so `Correctness: 10` parses as 1 (True). Preserved.'
+  reference_solution_visibility: The gold answer and, where present, the official solution are given
+    to the JUDGE ONLY. The judge is instructed not to reveal, quote or restate them, and the returned
+    hint is required to be non-leaking. No actor prompt ever contains the gold answer.
+token_accounting:
+  counted_from: 'the server''s `usage` object on each response: prompt_tokens, completion_tokens, total_tokens'
+  source: agentverse/llms/openai.py:1167-1169 and :1433-1435 (collect_metrics); per-instance accumulators
+    at :994-996
+  granularity: summed per ROLE and in total; written to token_counts.json in every run directory
+  reset_between_problems: true
+  reset_source: agentverse/tasksolving.py:320-321 calls environment.reset_token_counters() per example
+    (agentverse/environments/base.py:94-126).
+  upstream_bug_fixed_at_commit: b4a2db6ee53811b1a578972421da6a9cc2a18286
+  upstream_bug_caveat: 'MISLEADING ON SIGHT. Before commit b4a2db6ee ("Fix per-example resource accounting:
+    reset LLM token counters per example", 2026-07-24), the benchmark loop reused ONE TaskSolving object
+    across examples while the LLM counters only ever accumulated with +=. MetricsCollector.snapshot_agent_tokens
+    therefore recorded CUMULATIVE within-worker totals as if they were per-problem. Any per-problem
+    cost figure taken from a run predating that commit is inflated and monotonically increasing within
+    a shard. Verified: commit exists in the AgentVerse repository, and the fix is documented in the
+    reset_token_counters docstring at environments/base.py:96-105.'
+  http_attempts_recorded: true
+  http_attempts_rationale: DEVIATION FROM UPSTREAM, deliberate. Upstream increments total_request_count
+    once per LOGICAL call (openai.py:1141 etc), so HTTP retries are invisible and a cost estimate built
+    on it understates a rate-limited run. This port records BOTH `calls` and `http_attempts`.
+  known_undercount: This port omits the rolling-summary model calls (see context_and_memory.simplification),
+    so for PER its token totals are an UNDERCOUNT relative to the original engine. Do not compare token
+    counts from this port against the paper's.
+rule:
+  evaluator_dimensions:
+  - Correctness
+  include_hint_on_fail: true
+  reset_solver_memory_each_attempt: true
+  reviewer_feedback_mode: hint
+roles:
+  solver:
+    name: Solo
+    agent_type: solver
+    role_description: SingleAgentIterative
+    max_retry: 10
+    max_tokens: 4096
+    output_parser: dummy
+    memory_type: chat_history
+    prepend_prompt: |-
+      You are an experienced educator in the field of MATHEMATICS.
+
+      Problem:
+      ${task_description}
+
+      Previous submitted answer from this question (may be empty):
+      ${former_solution}
+
+      Question-scoped memory for this question:
+      ${advice}
+
+      Instructions:
+      - Solve the problem directly and give your current best complete solution.
+      - Use the question-scoped memory only to avoid repeating rejected answers and to incorporate evaluator feedback. It does not reveal the gold answer.
+      - Infer the required answer shape from the problem statement before committing to a final answer.
+      - The final answer may be a number, fraction, algebraic formula, set/list of tuples, family of functions, condition, or symbolic statement such as `n \\neq 5`.
+      - If the problem asks for all solutions / all functions / explicit form / all valid integers, do not answer with only one example or one tested case.
+      - Prefer exact symbolic forms over decimals unless approximation is explicitly requested.
+      - Your final TWO non-empty lines MUST be exactly:
+        `Final Answer: <answer>`
+        `\\boxed{<answer>}`
+      - The final boxed line must contain ONLY `\\boxed{<answer>}` and nothing else.
+      - Do NOT wrap the final boxed answer in `\\(` `\\)` `$` `$$` `\\[` `\\]`, `\\text{}`, or any other extra formatting.
+      - Do NOT put `\\boxed{...}` on the same line as `Final Answer:`.
+      - If you do not follow this exact two-line format, the evaluator may treat the final answer as missing.
+    append_prompt: |-
+      Be concise but mathematically complete.
+      Do not output more than one boxed final answer.
+      Do not end with discussion text after the boxed final answer.
+      End exactly with:
+      Final Answer: <answer>
+      \boxed{<answer>}
+    first_attempt_prepend_prompt: |-
+      You are an experienced educator in the field of MATHEMATICS.
+
+      Problem:
+      ${task_description}
+
+      Instructions:
+      - Solve the problem directly and give your best final answer in one attempt.
+      - Infer the required answer shape from the problem statement before committing to a final answer.
+      - The final answer may be a number, fraction, algebraic formula, set/list of tuples, family of functions, condition, inequality, or symbolic statement such as `n \\neq 5`.
+      - If the problem asks for all solutions / all functions / explicit form / all valid integers, do not answer with only one example or one tested case.
+      - Prefer exact symbolic forms over decimals unless approximation is explicitly requested.
+      - Your final TWO non-empty lines MUST be exactly:
+        `Final Answer: <answer>`
+        `\\boxed{<answer>}`
+      - The final boxed line must contain ONLY `\\boxed{<answer>}` and nothing else.
+      - Do NOT wrap the final boxed answer in `\\(` `\\)` `$` `$$` `\\[` `\\]`, `\\text{}`, or any other extra formatting.
+      - Do NOT put `\\boxed{...}` on the same line as `Final Answer:`.
+      - If you do not follow this exact two-line format, the evaluator may treat the final answer as missing.
+    first_attempt_append_prompt: |-
+      Be concise but mathematically complete.
+      Do not output more than one boxed final answer.
+      Do not end with discussion text after the boxed final answer.
+      End exactly with:
+      Final Answer: <answer>
+      \boxed{<answer>}
+  evaluator:
+    name: Evaluator
+    agent_type: evaluator
+    role_description: Evaluator
+    max_retry: 10
+    max_tokens: 4096
+    output_parser: mgsm-evaluator
+    memory_type: chat_history
+    prepend_prompt: |-
+      You are the Evaluator for a Baseline LLM math reasoning benchmark.
+
+      Problem:
+      ${task_description}
+
+      Solver final submission:
+      ${solution}
+
+      Ground truth / evaluator-only reference material:
+      ${result}
+
+      Requirements:
+        - Decide whether the final answer is mathematically equivalent to the ground truth.
+        - Focus on the final answer, not stylistic wording.
+        - The reference material may include both the final answer and an official solution. Use the official solution only to understand the intended reasoning and diagnose mismatch type.
+        - The repair hint must be tailored to the current extracted final answer, the ground-truth final answer, and the official solution. Do not recycle a generic hint unless the current final answer and mismatch type are unchanged.
+        - If the current final answer changed, diagnose the new mismatch type, for example wrong value, incomplete list, placeholder, wrong answer shape, missing cases, or insufficient generality.
+        - The ground truth may be a number, fraction, algebraic expression, formula, set/list of answers, family of functions, inequality, or symbolic condition.
+        - If the submission gives isolated numbers/examples but the problem asks for all objects, a formula/equation, a condition, or a classification, explicitly flag an answer-shape or generality mismatch without naming the missing answer.
+        - For prompts such as "find all", "for each", "all positive integers", "all functions", or "explicit form", check that the answer is a complete universal statement/family, not just tested cases.
+        - Treat mathematically equivalent formulas, reordered sets, and equivalent quantified statements as correct.
+        - Do not reveal, quote, restate, or hint at the ground truth or official solution in your response.
+        - Output a clear verdict label: `Verdict: PASS` or `Verdict: FAIL`.
+        - If the answer is equivalent, output `Correctness: 1`.
+        - Otherwise output `Correctness: 0` and give a short non-leaking repair hint that names the kind of mismatch without revealing the ground truth, for example: wrong answer type, incomplete family, missing cases, only an example, over-specific numeric answer when a general condition/equation/family is required, unsupported generalization, or formatting/boxing issue.
+    append_prompt: |-
+      Output format:
+      Verdict: PASS or FAIL
+      Correctness: 0 or 1
+      Response: <brief non-leaking repair hint; mention answer-shape/generality if relevant, without revealing the gold answer>
+provenance:
+  derived_from_config: AgentVerse/configs/paper/single_agent_hint_llm/config.yaml
+  derived_from_benchmark: AgentVerse/configs/paper/single_agent_hint_llm/benchmark.yaml
+  upstream_env_type: task-single-agent-reflect
+  upstream_rule_class: agentverse/environments/tasksolving_env/rules/single_agent_reflect.py::SingleAgentReflectRule
+  upstream_evaluator_type: llm
+  upstream_evaluator_class: agentverse/environments/tasksolving_env/rules/evaluator/per.py::LlmPerEvaluator
+  upstream_output_parsers:
+    solver: dummy
+    evaluator: mgsm-evaluator
+  prompts_copied_verbatim: true
+  port_location: src/protocol_routing_exec/protocols.py
+  gemma_variant_differences: configs/paper/different_model_family/*_gemma4_31b_eval_oss120b/config.yaml
+    uses IDENTICAL prompts and rule structure but actor max_tokens 2048 instead of 4096. The evaluator
+    stays gpt-oss-120b at max_tokens 4096 in every variant.
+  llm_type_caveat: 'The source configs set `llm_type: gpt-3.5-turbo` on every agent. That is a REGISTRY
+    KEY selecting the OpenAIChat class, popped before construction (agentverse/initialization.py:20-23);
+    the class is registered under five aliases (openai.py:982-986). The wire model is the separate `model:`
+    field. No GPT-3.5 was ever called.'

@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cost-Aware Protocol Routing | LLMs Can Predict Failure Risk, But Struggle to Predict Which Collaboration Protocol Pays Off (EMNLP 2026)</title>
+<meta name="description" content="EMNLP 2026 accepted paper. Four collaboration protocols run on every problem with the solver held fixed. A post-answer probe ranks Baseline failures at 0.8847 AUROC, but protocol-specific collaboration value stays weak (0.1674 and 0.1041 AUPRC).">
+<meta name="author" content="Chih-Hsuan Yang, Jingyan Jiang, Cheng-Hau Yang, Vikram Vasudevan, Huihuo Zheng, Venkatram Vishwanath, Rajeev Thakur">
+<meta name="keywords" content="LLM agents, multi-agent systems, cost-aware routing, protocol routing, calibration, EMNLP 2026">
+<link rel="canonical" href="https://chihhsuan-yang.github.io/EMNLP_Cost-Aware-Protocol-Routing/">
+
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Cost-Aware Protocol Routing">
+<meta property="og:title" content="LLMs Can Predict Failure Risk, But Struggle to Predict Which Collaboration Protocol Pays Off">
+<meta property="og:description" content="EMNLP 2026. Four matched collaboration protocols on every problem, solver held fixed. Failure risk is predictable (0.8847 AUROC); which protocol pays off is not (0.1674 / 0.1041 AUPRC).">
+<meta property="og:url" content="https://chihhsuan-yang.github.io/EMNLP_Cost-Aware-Protocol-Routing/">
+<meta property="og:image" content="https://chihhsuan-yang.github.io/EMNLP_Cost-Aware-Protocol-Routing/assets/img/fig1_main_combined.png">
+<meta property="og:image:width" content="4105">
+<meta property="og:image:height" content="1918">
+<meta property="og:image:alt" content="Two-panel figure: fixed-order-oracle label composition by difficulty tier, and a solve-versus-token-cost frontier for routing policies.">
+<meta property="og:locale" content="en_US">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="LLMs Can Predict Failure Risk, But Struggle to Predict Which Collaboration Protocol Pays Off">
+<meta name="twitter:description" content="EMNLP 2026. Failure risk is predictable (0.8847 AUROC); protocol-specific collaboration value is not (0.1674 / 0.1041 AUPRC).">
+<meta name="twitter:image" content="https://chihhsuan-yang.github.io/EMNLP_Cost-Aware-Protocol-Routing/assets/img/fig1_main_combined.png">
+<meta name="twitter:image:alt" content="Fixed-order-oracle labels by difficulty tier and the solve-versus-cost frontier for routing policies.">
+
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="assets/css/main.css">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ScholarlyArticle",
+  "headline": "LLMs Can Predict Failure Risk, But Struggle to Predict Which Collaboration Protocol Pays Off: Cost-Aware Protocol Routing Across Reasoning Tasks",
+  "name": "LLMs Can Predict Failure Risk, But Struggle to Predict Which Collaboration Protocol Pays Off: Cost-Aware Protocol Routing Across Reasoning Tasks",
+  "inLanguage": "en",
+  "url": "https://chihhsuan-yang.github.io/EMNLP_Cost-Aware-Protocol-Routing/",
+  "mainEntityOfPage": "https://chihhsuan-yang.github.io/EMNLP_Cost-Aware-Protocol-Routing/",
+  "image": "https://chihhsuan-yang.github.io/EMNLP_Cost-Aware-Protocol-Routing/assets/img/fig1_main_combined.png",
+  "identifier": "arXiv:2608.14927",
+  "abstract": "Multi-agent large language model (LLM) systems can improve reasoning by spending more computation, but deployment requires deciding when extra collaboration is worth its cost. We isolate this decision by running every problem under four protocols while holding the solver fixed within each setting: direct solving (Baseline), iterative self-correction (Single), planner-executor-reviewer collaboration (PER), and multi-agent deliberation (Broadcast).",
+  "keywords": ["LLM agents", "multi-agent systems", "cost-aware routing", "protocol routing", "calibration"],
+  "author": [
+    {"@type": "Person", "name": "Chih-Hsuan Yang", "affiliation": {"@type": "Organization", "name": "Argonne National Laboratory"}, "email": "bellayang@anl.gov"},
+    {"@type": "Person", "name": "Jingyan Jiang", "affiliation": {"@type": "Organization", "name": "Argonne National Laboratory"}},
+    {"@type": "Person", "name": "Cheng-Hau Yang", "affiliation": {"@type": "Organization", "name": "Argonne National Laboratory"}},
+    {"@type": "Person", "name": "Vikram Vasudevan", "affiliation": {"@type": "Organization", "name": "Oregon State University"}},
+    {"@type": "Person", "name": "Huihuo Zheng", "affiliation": {"@type": "Organization", "name": "Argonne National Laboratory"}},
+    {"@type": "Person", "name": "Venkatram Vishwanath", "affiliation": {"@type": "Organization", "name": "Argonne National Laboratory"}},
+    {"@type": "Person", "name": "Rajeev Thakur", "affiliation": {"@type": "Organization", "name": "Argonne National Laboratory"}}
+  ],
+  "citation": "arXiv:2608.14927",
+  "sameAs": [
+    "https://arxiv.org/abs/2608.14927",
+    "https://github.com/ChihHsuan-Yang/EMNLP_Cost-Aware-Protocol-Routing"
+  ],
+  "isPartOf": {"@type": "PublicationEvent", "name": "EMNLP 2026"},
+  "codeRepository": "https://github.com/ChihHsuan-Yang/EMNLP_Cost-Aware-Protocol-Routing"
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to main content</a>
+
+<nav class="nav" aria-label="Section navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="#top">Protocol&nbsp;Routing</a>
+    <ul class="nav-links">
+      <li><a href="#finding">Finding</a></li>
+      <li><a href="#abstract">Abstract</a></li>
+      <li><a href="#what-is">What it is</a></li>
+      <li><a href="#protocols">Protocols</a></li>
+      <li><a href="#distinction">Risk vs. value</a></li>
+      <li><a href="#results">Results</a></li>
+      <li><a href="#breadth">Breadth</a></li>
+      <li><a href="#code">Code &amp; data</a></li>
+      <li><a href="#reproduce">Reproduce</a></li>
+      <li><a href="#limitations">Limitations</a></li>
+      <li><a href="#cite">Cite</a></li>
+      <li><a href="#team">Team</a></li>
+    </ul>
+    <div class="search-wrap">
+      <label class="skip" for="site-search">Search sections of this page</label>
+      <input id="site-search" type="search" placeholder="Search this page" autocomplete="off"
+             role="combobox" aria-expanded="false" aria-controls="search-results" aria-label="Search sections of this page">
+      <ul id="search-results" class="search-results" role="listbox" aria-label="Search results" hidden></ul>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <div class="ladder" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+    <p class="badge">EMNLP 2026 Accepted Paper</p>
+    <h1 class="title">LLMs Can Predict Failure Risk, But Struggle to Predict Which Collaboration Protocol Pays Off<span class="sub">Cost-Aware Protocol Routing Across Reasoning Tasks</span></h1>
+
+    <p class="authors">
+      <span class="au">Chih-Hsuan Yang<sup>1</sup></span><span class="sep">, </span><span class="au">Jingyan Jiang<sup>1</sup></span><span class="sep">, </span><span class="au">Cheng-Hau Yang<sup>1</sup></span><span class="sep">, </span><span class="au">Vikram Vasudevan<sup>2</sup></span><span class="sep">, </span><span class="au">Huihuo Zheng<sup>1</sup></span><span class="sep">, </span><span class="au">Venkatram Vishwanath<sup>1</sup></span><span class="sep">, </span><span class="au">Rajeev Thakur<sup>1</sup></span>
+    </p>
+    <p class="affil"><sup>1</sup>Argonne National Laboratory, Lemont, IL, USA &nbsp;&middot;&nbsp; <sup>2</sup>Oregon State University, Corvallis, OR, USA</p>
+    <p class="affil">Contact: <a class="contact" href="mailto:bellayang@anl.gov">bellayang@anl.gov</a></p>
+
+    <div class="btnrow">
+      <a class="btn primary" href="https://arxiv.org/pdf/2608.14927"><span class="gl" aria-hidden="true">&#9782;</span> Paper (PDF)</a>
+      <a class="btn" href="https://arxiv.org/abs/2608.14927"><span class="gl" aria-hidden="true">&#9993;</span> arXiv</a>
+      <a class="btn" href="https://github.com/ChihHsuan-Yang/EMNLP_Cost-Aware-Protocol-Routing"><span class="gl" aria-hidden="true">&#9737;</span> GitHub</a>
+      <a class="btn" href="https://huggingface.co/datasets/AgentsSci/EMNLP_Cost-Aware-Protocol-Routing"><span class="gl" aria-hidden="true">&#9636;</span> Dataset Card</a>
+      <a class="btn" href="https://huggingface.co/AgentsSci/EMNLP_Cost-Aware-Protocol-Routing"><span class="gl" aria-hidden="true">&#9635;</span> Model Card</a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+<section id="finding" class="wrap" aria-labelledby="h-finding">
+  <h2 id="h-finding"><span class="kicker">The one-sentence version</span>Central finding</h2>
+  <div class="finding">
+    <p>A language model can tell you fairly well <em>that</em> its cheap answer is probably wrong, but not <em>which</em> more expensive collaboration protocol would fix it.</p>
+  </div>
+  <p class="lede" style="margin-top:18px">Concretely: a post-answer, pre-collaboration <code>gpt-oss-120b</code> probe ranks Baseline failures at <strong>0.8847 AUROC</strong> (4,151 parseable of 4,181; 95% CI [0.8732, 0.8955]). The same score stays useful for &ldquo;does any collaboration help&rdquo; (<strong>0.7683 AUPRC</strong>), but is much weaker for PER-specific (<strong>0.1674 AUPRC</strong>) and Broadcast-specific (<strong>0.1041 AUPRC</strong>) value. Confidence supports initial escalation; protocol-specific cost-aware routing remains unresolved.</p>
+
+  <figure>
+    <img src="assets/img/fig1_main_combined.png" width="4105" height="1918"
+         alt="Two-panel overview figure. Left panel: stacked bars showing the fixed-order-oracle label composition across difficulty tiers, with Baseline, Single, PER, Broadcast and None shares summing to one within each tier; the Baseline share shrinks and the costlier-protocol and None shares grow as difficulty rises. Right panel: a solve-rate versus average-token-cost frontier in which the self-confidence gate sits up and to the left of the frozen large-language-model routers, which buy extra solves with substantially more tokens.">
+    <figcaption><b>Overview.</b> (a) Fixed-order-oracle labels by difficulty tier; fractions sum to 1 within each tier. (b) Solve&ndash;cost frontier relative to Tier-majority; upper-left is better. The self-confidence gate improves the low-cost frontier, while larger frozen routers buy additional solves through substantially more token use. Figure&nbsp;1 of the paper (<code>fig1_main_combined</code>).</figcaption>
+  </figure>
+</section>
+
+<section id="abstract" class="wrap" aria-labelledby="h-abstract">
+  <h2 id="h-abstract"><span class="kicker">Plain language</span>What the paper says</h2>
+  <p>Multi-agent LLM systems get better at reasoning by spending more computation. That raises a deployment question the field mostly skips: <em>when is the extra collaboration actually worth paying for?</em></p>
+  <p>To answer it cleanly, we ran <strong>every problem under all four protocols</strong> and held the solver fixed within each setting. Because every problem has a realized outcome and a realized token cost under every protocol, we can score any routing policy offline against what actually happened, instead of guessing.</p>
+  <p>What we see is a pair of opposite failures. Cost-conservative policies <strong>under-escalate</strong>: they stay cheap on problems that stronger collaboration would have solved. Higher-solve frozen LLM routers <strong>over-escalate</strong>: they buy the extra solves by spending far more tokens than the problem needed. Aggregate routing accuracy hides this, because the two error types cancel in a single score.</p>
+  <p>That motivates a distinction the paper makes explicit and then measures: predicting <em>failure risk</em> is a different, easier problem than predicting <em>collaboration value</em>. A model's own post-answer confidence handles the first. It does not handle the second.</p>
+
+  <details>
+    <summary>Read the paper abstract verbatim</summary>
+    <div class="dbody">
+      <p>Multi-agent large language model (LLM) systems can improve reasoning by spending more computation, but deployment requires deciding when extra collaboration is worth its cost. We isolate this decision by running every problem under four protocols while holding the solver fixed within each setting: direct solving (Baseline), iterative self-correction (Single), planner&ndash;executor&ndash;reviewer collaboration (PER), and multi-agent deliberation (Broadcast). The primary benchmark comprises 4,181 competition-level math problems; paired robustness checks cover four benchmarks spanning competition math, biology, and broader science with two solver families. Across fixed policies, trained routers, and frozen LLM routers, conservative policies under-escalate, whereas higher-solve frozen routers often over-escalate. A post-answer, pre-collaboration <code>gpt-oss-120b</code> probe ranks Baseline failures with 0.8847 AUROC (4,151 parseable cases; 95% CI [0.8732, 0.8955]). The same score remains informative for predicting whether any collaboration helps (0.7683 AUPRC), but is much weaker for identifying PER- or Broadcast-specific value (0.1674 and 0.1041 AUPRC). Separately, the pre-answer self-confidence gate reaches 78.0% solve at 45K tokens, compared with 73.8% at 71.3K for a frozen <code>gpt-oss-120b</code> router and 92.4% for a retrospective fixed-order oracle. Across 10 paired model&ndash;condition settings, the oracle adds 23.2&ndash;58.3 points of retrospective coverage over Baseline, but protocol profiles vary by task. In the six settings with held-out router evaluations, oracle gaps remain 18.5&ndash;28.9 points. Confidence can therefore support initial escalation, while protocol-specific cost-aware routing remains unresolved.</p>
+    </div>
+  </details>
+</section>
+
+<section id="what-is" class="wrap" aria-labelledby="h-what">
+  <h2 id="h-what"><span class="kicker">Orientation</span>What is protocol routing?</h2>
+  <p>A <strong>router</strong> picks one action <em>before</em> it sees how any protocol turns out. It looks at the problem text and the metadata it is allowed to see, and it chooses Baseline, Single, PER, Broadcast, or <code>None</code> &mdash; and then that choice is executed and billed. Fixed policies (&ldquo;always Baseline&rdquo;) are just degenerate routers.</p>
+  <p>Routers and confidence probes in this work never receive gold answers, correctness labels, oracle labels, or protocol outcomes. The <code>None</code> action abstains; it can be both an oracle label and a router prediction.</p>
+  <p>We score a policy on three things: <strong>solve rate</strong>, <strong>average tokens</strong>, and <strong>excess tokens</strong> &mdash; the mean positive per-problem token overpayment relative to the realized oracle. Choosing a protocol when the oracle label is <code>None</code> counts as over-escalation, and all of those tokens are excess.</p>
+
+  <h3>The fixed-order oracle, and what it is not</h3>
+  <p>For each problem, the oracle is the <strong>first successful protocol in the fixed aggregate cost order</strong>:</p>
+  <ul class="chiprow" aria-label="Fixed cheapest-success oracle order">
+    <li><span class="swatch" style="background:#4C78A8" aria-hidden="true"></span>Baseline</li>
+    <li aria-hidden="true">&rarr;</li>
+    <li><span class="swatch" style="background:#F58518" aria-hidden="true"></span>Single</li>
+    <li aria-hidden="true">&rarr;</li>
+    <li><span class="swatch" style="background:#54A24B" aria-hidden="true"></span>PER</li>
+    <li aria-hidden="true">&rarr;</li>
+    <li><span class="swatch" style="background:#B279A2" aria-hidden="true"></span>Broadcast</li>
+    <li aria-hidden="true">&rarr;</li>
+    <li><span class="swatch" style="background:#9C9C9C" aria-hidden="true"></span>None</li>
+  </ul>
+  <p style="margin-top:14px"><code>None</code> means all four observed executions failed.</p>
+  <div class="callout warn">
+    <span class="ct">Read this before quoting any oracle number</span>
+    <p>The fixed-order oracle is <strong>retrospective</strong>. It is a matched, single-realization diagnostic upper bound over one realized outcome per protocol &mdash; <strong>not a deployable policy</strong>, not a per-instance minimum-token oracle, and not an estimate of expected success under repeated sampling. Every oracle figure on this page carries that caveat, including the ones in the tables below.</p>
+  </div>
+</section>
+
+<section id="protocols" class="wrap" aria-labelledby="h-protocols">
+  <h2 id="h-protocols"><span class="kicker">The four actions</span>Protocols, held on a fixed solver</h2>
+  <p>In the main benchmark, every problem is run once under each of four protocols with the same <code>gpt-oss-120b</code> solver stack, at temperature 0.0. Changing only the collaboration protocol &mdash; never the base model &mdash; is what isolates protocol value from a change in model capability.</p>
+
+  <div class="protocols">
+    <article class="pcard pc-baseline">
+      <h3><span class="chip" aria-hidden="true"></span>Baseline</h3>
+      <p>One direct attempt, no self-correction.</p>
+      <dl><dt>Avg. tokens</dt><dd>18.2K</dd><dt>Solve</dt><dd>56.3%</dd></dl>
+    </article>
+    <article class="pcard pc-single">
+      <h3><span class="chip" aria-hidden="true"></span>Single</h3>
+      <p>Adds iterative self-correction.</p>
+      <dl><dt>Avg. tokens</dt><dd>47.6K</dd><dt>Solve</dt><dd>78.5%</dd></dl>
+    </article>
+    <article class="pcard pc-per">
+      <h3><span class="chip" aria-hidden="true"></span>PER</h3>
+      <p>Planner, executor, and reviewer roles.</p>
+      <dl><dt>Avg. tokens</dt><dd>401.9K</dd><dt>Solve</dt><dd>84.9%</dd></dl>
+    </article>
+    <article class="pcard pc-broadcast">
+      <h3><span class="chip" aria-hidden="true"></span>Broadcast</h3>
+      <p>Multi-agent deliberation with shared candidates and peer approval.</p>
+      <dl><dt>Avg. tokens</dt><dd>622.1K</dd><dt>Solve</dt><dd>88.9%</dd></dl>
+    </article>
+  </div>
+  <p class="tnote">Token and solve figures above are on the main held-out split. Note the span: Broadcast costs roughly 34&times; Baseline in tokens to add 32.6 points of solve rate &mdash; averaged over problems that mostly did not need it. That gap is the entire motivation for routing.</p>
+</section>
+
+<section id="distinction" class="wrap" aria-labelledby="h-distinction">
+  <h2 id="h-distinction"><span class="kicker">The core distinction</span>Failure risk is not protocol value</h2>
+  <p>These sound like the same question. They are not, and the gap between them is the paper's main result. Imagine one hard math problem and a model that has just produced a cheap Baseline answer.</p>
+
+  <div class="compare">
+    <div>
+      <p class="q">&ldquo;Is my cheap answer wrong?&rdquo;</p>
+      <h3>Failure-risk prediction</h3>
+      <p><strong>One yes/no question</strong> about an answer the model has already written. The model can inspect its own output and ask how confident it is. Getting this right tells you <em>whether</em> to escalate at all.</p>
+      <p><span class="verdict good">Largely works</span></p>
+      <p>The post-answer probe ranks Baseline failures at <strong>0.8847 AUROC</strong>, 95% CI [0.8732, 0.8955].</p>
+    </div>
+    <div>
+      <p class="q">&ldquo;Which expensive workflow would fix it?&rdquo;</p>
+      <h3>Collaboration-value prediction</h3>
+      <p><strong>A different question entirely.</strong> It asks the model to forecast the behaviour of workflows it has not run, on a problem it just failed &mdash; and to judge whether the marginal benefit covers an order-of-magnitude cost increase. Getting this right tells you <em>which</em> action to take.</p>
+      <p><span class="verdict bad">Largely does not</span></p>
+      <p>Same score, protocol-specific targets: <strong>0.1674 AUPRC</strong> for PER, <strong>0.1041 AUPRC</strong> for Broadcast.</p>
+    </div>
+  </div>
+
+  <p>The table below is the cleanest statement of the effect: <strong>one score, four increasingly specific targets.</strong> As the target narrows from &ldquo;Baseline fails&rdquo; toward a named protocol, ranking quality holds up moderately (AUROC stays above 0.72) but precision collapses (AUPRC falls from 0.8950 to 0.1041). The protocol-specific AUPRCs do exceed their rare prevalences &mdash; 0.1674 against 8.8%, 0.1041 against 4.2% &mdash; so confidence is not devoid of value signal. It is simply not a reliable protocol selector.</p>
+
+  <div class="table-scroll">
+    <table>
+      <caption><b>Table 1.</b> The same post-answer failure score on increasingly specific targets, <code>gpt-oss-120b</code> on OmniMath (n&nbsp;=&nbsp;4,151 parseable cases). Prevalence is a percentage. &ldquo;PER first success&rdquo; means Baseline and Single fail but PER succeeds; &ldquo;Broadcast-only success&rdquo; means Baseline, Single and PER all fail while Broadcast succeeds in the matched realized runs.</caption>
+      <thead>
+        <tr>
+          <th scope="col" class="l">Target</th>
+          <th scope="col">Prevalence (%)</th>
+          <th scope="col">AUROC</th>
+          <th scope="col">AUPRC</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="hl"><th scope="row" class="l">Baseline fails</th><td class="num">43.4</td><td class="num">0.8847</td><td class="num">0.8950</td></tr>
+        <tr><th scope="row" class="l">Any collaboration helps</th><td class="num">36.0</td><td class="num">0.8544</td><td class="num">0.7683</td></tr>
+        <tr><th scope="row" class="l"><span class="swatch" style="background:#54A24B" aria-hidden="true"></span>PER first success</th><td class="num">8.8</td><td class="num">0.7259</td><td class="num">0.1674</td></tr>
+        <tr><th scope="row" class="l"><span class="swatch" style="background:#B279A2" aria-hidden="true"></span>Broadcast-only success</th><td class="num">4.2</td><td class="num">0.7639</td><td class="num">0.1041</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="scrollhint">Table scrolls horizontally on narrow screens.</p>
+  <p class="tnote">Source: <code>anc/failure_and_protocol_value_targets.csv</code>, rows for <code>gpt-oss-120b</code> / OmniMath. Of 4,181 matched problems, 4,151 produce parseable scores (99.28%); the 30 unparseable outputs are excluded rather than imputed.</p>
+
+  <h3>The probe cannot cheat</h3>
+  <p>After <code>gpt-oss-120b</code> produces its Baseline answer, we ask it for P(Baseline correct). The probe sees only the problem, the allowed metadata, and its own Baseline <em>final answer</em>. It sees no reasoning trace, no gold answer, no correctness label, no oracle label, and no collaboration outcome. Failure risk is then 1&nbsp;&minus;&nbsp;P(correct).</p>
+
+  <figure>
+    <img src="assets/img/fig3a_reliability.png" width="1849" height="1609"
+         alt="Reliability diagram comparing self-reported single-pass confidence on the horizontal axis with empirical Baseline success rate on the vertical axis, plotted against a diagonal line of perfect calibration.">
+    <figcaption><b>Self-assessment reliability.</b> Self-reported single-pass confidence compared with empirical Baseline success, for the cleaned pre-answer confidence probe (<code>fig3a_reliability</code>).</figcaption>
+  </figure>
+  <figure>
+    <img src="assets/img/fig3b_oracle_by_confidence.png" width="1946" height="1927"
+         alt="Stacked bar chart showing the distribution of fixed-order-oracle routing labels within each bin of self-reported confidence; the Baseline share dominates high-confidence bins while costlier-protocol and None labels concentrate in low-confidence bins.">
+    <figcaption><b>Oracle labels by confidence bin.</b> Fixed-order-oracle routing labels within confidence bins (<code>fig3b_oracle_by_confidence</code>). Confidence separates &ldquo;Baseline is enough&rdquo; from &ldquo;something more is needed&rdquo;, but within the low-confidence region the costlier labels remain mixed &mdash; which is the selection problem the paper leaves open.</figcaption>
+  </figure>
+</section>
+
+<section id="results" class="wrap" aria-labelledby="h-results">
+  <h2 id="h-results"><span class="kicker">Main empirical results</span>Routing policies on the held-out split</h2>
+  <p>All policies below are evaluated on the same primary 423-problem held-out test split, so solve rates and costs are directly comparable. Intervals are 95% percentile intervals from 2,000 problem-level bootstrap resamples.</p>
+
+  <div class="table-scroll">
+    <table>
+      <caption><b>Table 2.</b> Representative routing policies on the primary held-out test split (n&nbsp;=&nbsp;423). Excess is the mean positive per-problem token overpayment above the realized fixed-order oracle. The fixed-order-oracle row is <strong>retrospective</strong> and is not a deployable policy.</caption>
+      <thead>
+        <tr>
+          <th scope="col" class="l">Class</th>
+          <th scope="col" class="l">Policy</th>
+          <th scope="col">Solve (%) [95% CI]</th>
+          <th scope="col">Avg. tokens (K) [95% CI]</th>
+          <th scope="col">Excess (K) [95% CI]</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="l">Fixed</td><th scope="row" class="l">Baseline</th><td class="num">56.3 <span class="ci">[51.5, 61.0]</span></td><td class="num">18.2 <span class="ci">[17.1, 19.2]</span></td><td class="num">1.7 <span class="ci">[1.1, 2.4]</span></td></tr>
+        <tr><td class="l">Heuristic</td><th scope="row" class="l">Tier-majority</th><td class="num">65.0 <span class="ci">[60.5, 69.5]</span></td><td class="num">28.9 <span class="ci">[26.0, 31.9]</span></td><td class="num">5.7 <span class="ci">[3.9, 7.7]</span></td></tr>
+        <tr><td class="l">Frozen LLM</td><th scope="row" class="l"><code>gpt-oss-120b</code></th><td class="num">73.8 <span class="ci">[69.5, 77.5]</span></td><td class="num">71.3 <span class="ci">[56.5, 86.7]</span></td><td class="num">37.1 <span class="ci">[24.2, 50.6]</span></td></tr>
+        <tr><td class="l">Frozen LLM</td><th scope="row" class="l"><code>gpt-oss-120b</code> with cost prompt</th><td class="num">78.3 <span class="ci">[74.2, 82.0]</span></td><td class="num">88.6 <span class="ci">[71.0, 107.6]</span></td><td class="num">51.6 <span class="ci">[35.2, 68.9]</span></td></tr>
+        <tr class="hl"><td class="l">Confidence</td><th scope="row" class="l">Self-confidence gate</th><td class="num">78.0 <span class="ci">[74.0, 81.8]</span></td><td class="num">45.0 <span class="ci">[41.6, 48.7]</span></td><td class="num">14.8 <span class="ci">[12.2, 17.4]</span></td></tr>
+        <tr><td class="l">Retrospective</td><th scope="row" class="l">Fixed-order oracle</th><td class="num">92.4 <span class="ci">[89.8, 95.0]</span></td><td class="num">101.1 <span class="ci">[80.1, 124.5]</span></td><td class="num">0.0 <span class="ci">[0.0, 0.0]</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="scrollhint">Table scrolls horizontally on narrow screens.</p>
+  <p class="tnote">Source: <code>anc/main_routing_heldout.csv</code>. Protocol executions and router/probe calls use deterministic decoding, so these intervals measure benchmark-problem sampling uncertainty, not fresh-run variability.</p>
+
+  <h3>How to read this table</h3>
+  <ul>
+    <li><strong>The self-confidence gate is the cost-efficiency result.</strong> A single rule &mdash; keep Baseline at confidence &ge;&nbsp;70, otherwise choose Single, with missing confidence scores also choosing Single &mdash; reaches 78.0% solve at 45.0K tokens, versus 73.8% at 71.3K for the frozen <code>gpt-oss-120b</code> router. The solve intervals overlap, so this supports a <em>cost-efficiency</em> comparison, not a claim of higher solve rate.</li>
+    <li><strong>The gate is deliberately narrow.</strong> It never chooses PER, Broadcast, or <code>None</code>. Its 14.4-point gap to the fixed-order oracle is exactly the unsolved part.</li>
+    <li><strong>Errors are directional, and they point opposite ways.</strong> Tier-majority under-escalates on 27.4% and over-escalates on 12.5% of test problems. The <code>gpt-oss-120b</code> router cuts under-escalation to 18.0% but raises over-escalation to 33.3%. Higher-solve Llama and Gemma frozen routers reduce under-escalation to 6&ndash;11% while over-escalating on 63&ndash;71%.</li>
+    <li><strong>Cheap references are competitive.</strong> The selected metadata-only and text+metadata logistic routers solve 60.8% and 61.2%, both below the 65.0% of the Tier-majority heuristic.</li>
+    <li><strong>No evaluated router approaches the oracle operating point.</strong> Larger cross-family frozen routers reach 80&ndash;83% solve while spending 156K&ndash;280K tokens on average.</li>
+  </ul>
+</section>
+
+<section id="breadth" class="wrap" aria-labelledby="h-breadth">
+  <h2 id="h-breadth"><span class="kicker">Scope of evidence</span>Dataset and model breadth</h2>
+  <p>Matched four-protocol outcomes cover <strong>10 complete model-condition settings</strong>: two solvers, <code>gpt-oss-120b</code> and <code>Gemma-4-31B-it</code>, each across five conditions &mdash; OmniMath (n&nbsp;=&nbsp;4,181), JEEBench (n&nbsp;=&nbsp;515), SciBench (n&nbsp;=&nbsp;565), LAB-Bench strict (n&nbsp;=&nbsp;741), and LAB-Bench text-no-tool (n&nbsp;=&nbsp;1,542). These span three broad task families: competition math, engineering entrance-exam STEM and college-level science, and biology multiple choice.</p>
+
+  <div class="callout">
+    <span class="ct">Scope boundary &mdash; please do not over-read</span>
+    <p>The matched coverage study covers all <strong>10</strong> settings. The deeper post-answer-confidence, held-out-router, and PER/Broadcast interaction analyses cover only <strong>six</strong>: both solvers on OmniMath, LAB-Bench strict, and LAB-Bench text-no-tool. These are targeted robustness checks, not a claim of broad universality.</p>
+  </div>
+
+  <figure>
+    <img src="assets/img/fig2_matched_benchmarks.png" width="3961" height="1328"
+         alt="Heatmap grid of matched solve and coverage percentages. Rows are the ten solver-by-condition settings; columns are the Baseline, Single, PER and Broadcast protocols plus the retrospective fixed-order oracle. Cell hue identifies the protocol and deeper tint indicates higher solve or coverage, with the strongest deployable fixed protocol in each row outlined.">
+    <figcaption><b>Matched breadth.</b> Solve/coverage percentages across four benchmarks (five prompt conditions), four protocols, and two solver families. Cell hue identifies the protocol; deeper tint indicates higher solve/coverage. The outlined cell is the strongest deployable fixed protocol in each row. Oracle is retrospective fixed-order coverage computed from the same four realized outcomes. Unlike Table&nbsp;2, this figure uses all matched problems available in each setting (<code>fig2_matched_benchmarks</code>).</figcaption>
+  </figure>
+
+  <p>Stronger collaboration has recoverable value in all 10 paired settings: retrospective fixed-order-oracle coverage exceeds Baseline by <strong>23.2&ndash;58.3 points</strong>. But the protocol profile varies. Broadcast is the strongest fixed protocol in nine settings, while PER exceeds Broadcast by 2.7 points for Gemma on SciBench. This supports task-dependent protocol value, not universal generalization.</p>
+
+  <details>
+    <summary>Full matched coverage across all 10 settings (solve % per protocol, plus retrospective oracle)</summary>
+    <div class="dbody">
+      <div class="table-scroll">
+        <table>
+          <caption><b>Table 3.</b> Four-protocol solve rates and retrospective fixed-order-oracle coverage for the 10 paired model-condition settings. All values are percentages of matched problems. The oracle column is retrospective, not a deployable policy.</caption>
+          <thead>
+            <tr>
+              <th scope="col" class="l">Solver</th><th scope="col" class="l">Setting</th><th scope="col">n</th>
+              <th scope="col"><span class="swatch" style="background:#4C78A8" aria-hidden="true"></span>Baseline</th>
+              <th scope="col"><span class="swatch" style="background:#F58518" aria-hidden="true"></span>Single</th>
+              <th scope="col"><span class="swatch" style="background:#54A24B" aria-hidden="true"></span>PER</th>
+              <th scope="col"><span class="swatch" style="background:#B279A2" aria-hidden="true"></span>Broadcast</th>
+              <th scope="col">Oracle</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="l"><code>gpt-oss-120b</code></td><th scope="row" class="l">OmniMath</th><td class="num">4,181</td><td class="num">56.83</td><td class="num">78.78</td><td class="num">85.17</td><td class="num">89.21</td><td class="num">92.68</td></tr>
+            <tr><td class="l"><code>gpt-oss-120b</code></td><th scope="row" class="l">JEEBench</th><td class="num">515</td><td class="num">41.55</td><td class="num">55.34</td><td class="num">91.46</td><td class="num">94.95</td><td class="num">96.50</td></tr>
+            <tr><td class="l"><code>gpt-oss-120b</code></td><th scope="row" class="l">SciBench</th><td class="num">565</td><td class="num">62.12</td><td class="num">72.21</td><td class="num">87.43</td><td class="num">89.73</td><td class="num">91.15</td></tr>
+            <tr><td class="l"><code>gpt-oss-120b</code></td><th scope="row" class="l">LAB-Bench strict</th><td class="num">741</td><td class="num">19.03</td><td class="num">30.23</td><td class="num">47.64</td><td class="num">74.22</td><td class="num">77.33</td></tr>
+            <tr><td class="l"><code>gpt-oss-120b</code></td><th scope="row" class="l">LAB-Bench text-no-tool</th><td class="num">1,542</td><td class="num">30.54</td><td class="num">55.64</td><td class="num">59.27</td><td class="num">81.26</td><td class="num">86.38</td></tr>
+            <tr><td class="l"><code>Gemma-4-31B-it</code></td><th scope="row" class="l">OmniMath</th><td class="num">4,181</td><td class="num">69.39</td><td class="num">85.94</td><td class="num">90.65</td><td class="num">92.99</td><td class="num">95.67</td></tr>
+            <tr><td class="l"><code>Gemma-4-31B-it</code></td><th scope="row" class="l">JEEBench</th><td class="num">515</td><td class="num">70.49</td><td class="num">81.36</td><td class="num">95.92</td><td class="num">98.25</td><td class="num">99.22</td></tr>
+            <tr><td class="l"><code>Gemma-4-31B-it</code></td><th scope="row" class="l">SciBench</th><td class="num">565</td><td class="num">70.27</td><td class="num">79.29</td><td class="num">91.33</td><td class="num">88.67</td><td class="num">93.45</td></tr>
+            <tr><td class="l"><code>Gemma-4-31B-it</code></td><th scope="row" class="l">LAB-Bench strict</th><td class="num">741</td><td class="num">44.40</td><td class="num">58.16</td><td class="num">69.37</td><td class="num">89.34</td><td class="num">90.55</td></tr>
+            <tr><td class="l"><code>Gemma-4-31B-it</code></td><th scope="row" class="l">LAB-Bench text-no-tool</th><td class="num">1,542</td><td class="num">41.96</td><td class="num">74.77</td><td class="num">85.02</td><td class="num">91.05</td><td class="num">96.37</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="tnote">Source: <code>anc/matched_protocol_coverage.csv</code>. SciBench under <code>Gemma-4-31B-it</code> is the one setting where PER (91.33) exceeds Broadcast (88.67).</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Post-answer failure-risk quality varies sharply by model and domain (six settings)</summary>
+    <div class="dbody">
+      <div class="table-scroll">
+        <table>
+          <caption><b>Table 4.</b> Post-answer, pre-collaboration failure-risk metrics for the six settings with deeper analyses. ECE is expected calibration error; lower is better for ECE and Brier, higher is better for AUROC.</caption>
+          <thead>
+            <tr>
+              <th scope="col" class="l">Solver</th><th scope="col" class="l">Setting</th>
+              <th scope="col">n parseable / total</th><th scope="col">Failure AUROC [95% CI]</th><th scope="col">ECE</th><th scope="col">Brier</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="hl"><td class="l"><code>gpt-oss-120b</code></td><th scope="row" class="l">OmniMath</th><td class="num">4,151 / 4,181</td><td class="num">0.8847 <span class="ci">[0.8732, 0.8955]</span></td><td class="num">0.0852</td><td class="num">0.1314</td></tr>
+            <tr><td class="l"><code>gpt-oss-120b</code></td><th scope="row" class="l">LAB-Bench strict</th><td class="num">719 / 741</td><td class="num">0.5814 <span class="ci">[0.5410, 0.6165]</span></td><td class="num">0.3474</td><td class="num">0.3432</td></tr>
+            <tr><td class="l"><code>gpt-oss-120b</code></td><th scope="row" class="l">LAB-Bench text-no-tool</th><td class="num">1,510 / 1,542</td><td class="num">0.6069 <span class="ci">[0.5808, 0.6347]</span></td><td class="num">0.2132</td><td class="num">0.2874</td></tr>
+            <tr><td class="l"><code>Gemma-4-31B-it</code></td><th scope="row" class="l">OmniMath</th><td class="num">4,178 / 4,181</td><td class="num">0.8012 <span class="ci">[0.7872, 0.8162]</span></td><td class="num">0.1594</td><td class="num">0.1726</td></tr>
+            <tr><td class="l"><code>Gemma-4-31B-it</code></td><th scope="row" class="l">LAB-Bench strict</th><td class="num">733 / 741</td><td class="num">0.8637 <span class="ci">[0.8359, 0.8894]</span></td><td class="num">0.1460</td><td class="num">0.1506</td></tr>
+            <tr><td class="l"><code>Gemma-4-31B-it</code></td><th scope="row" class="l">LAB-Bench text-no-tool</th><td class="num">1,542 / 1,542</td><td class="num">0.7337 <span class="ci">[0.7110, 0.7562]</span></td><td class="num">0.1100</td><td class="num">0.2117</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="tnote">Source: <code>anc/postanswer_confidence.csv</code>. The headline 0.8847 AUROC is the <code>gpt-oss-120b</code> / OmniMath cell; the same probe reaches only 0.5814 for <code>gpt-oss-120b</code> on LAB-Bench strict. Confidence quality is not a fixed property of a model.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Held-out router evaluation and remaining oracle gaps (six settings)</summary>
+    <div class="dbody">
+      <div class="table-scroll">
+        <table>
+          <caption><b>Table 5.</b> Text-and-metadata router results on identical held-out problem identifiers, for the six settings with held-out router evaluations. The oracle gap is router solve subtracted from retrospective fixed-order-oracle solve.</caption>
+          <thead>
+            <tr>
+              <th scope="col" class="l">Solver</th><th scope="col" class="l">Setting</th><th scope="col">n</th>
+              <th scope="col">Baseline solve</th><th scope="col">Router solve [95% CI]</th><th scope="col">Oracle solve</th><th scope="col">Oracle gap (pts)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="l"><code>gpt-oss-120b</code></td><th scope="row" class="l">OmniMath</th><td class="num">628</td><td class="num">0.5685</td><td class="num">0.6672 <span class="ci">[0.6306, 0.7038]</span></td><td class="num">0.9268</td><td class="num">26.0</td></tr>
+            <tr><td class="l"><code>gpt-oss-120b</code></td><th scope="row" class="l">LAB-Bench strict</th><td class="num">112</td><td class="num">0.1875</td><td class="num">0.5625 <span class="ci">[0.4732, 0.6607]</span></td><td class="num">0.7679</td><td class="num">20.5</td></tr>
+            <tr><td class="l"><code>gpt-oss-120b</code></td><th scope="row" class="l">LAB-Bench text-no-tool</th><td class="num">232</td><td class="num">0.3060</td><td class="num">0.5733 <span class="ci">[0.5086, 0.6379]</span></td><td class="num">0.8621</td><td class="num">28.9</td></tr>
+            <tr><td class="l"><code>Gemma-4-31B-it</code></td><th scope="row" class="l">OmniMath</th><td class="num">628</td><td class="num">0.6943</td><td class="num">0.7659 <span class="ci">[0.7309, 0.7978]</span></td><td class="num">0.9570</td><td class="num">19.1</td></tr>
+            <tr><td class="l"><code>Gemma-4-31B-it</code></td><th scope="row" class="l">LAB-Bench strict</th><td class="num">112</td><td class="num">0.4464</td><td class="num">0.7054 <span class="ci">[0.6161, 0.7857]</span></td><td class="num">0.9107</td><td class="num">20.5</td></tr>
+            <tr><td class="l"><code>Gemma-4-31B-it</code></td><th scope="row" class="l">LAB-Bench text-no-tool</th><td class="num">232</td><td class="num">0.4181</td><td class="num">0.7759 <span class="ci">[0.7198, 0.8276]</span></td><td class="num">0.9612</td><td class="num">18.5</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="tnote">Source: <code>anc/heldout_router_evaluation.csv</code>. The router improves over Baseline by 7.2&ndash;37.5 points in all six settings, yet remains <strong>18.5&ndash;28.9 points below</strong> the retrospective fixed-order oracle. Relative to Tier-majority, gains are mixed: paired differences range from &minus;8.0 points (<code>gpt-oss-120b</code>, LAB-Bench strict, CI [&minus;17.0, 1.8]) to +25.0 points (<code>Gemma-4-31B-it</code>, LAB-Bench strict, CI [16.1, 33.9]) &mdash; see <code>anc/heldout_router_paired_differences.csv</code>.</p>
+    </div>
+  </details>
+
+  <h3>The expensive protocols are not interchangeable</h3>
+  <p>Conditional on Baseline and Single both failing, Broadcast exceeds PER by 9.6&ndash;10.7 points on OmniMath and 30.8&ndash;44.6 points on LAB-Bench. Nevertheless, PER-only successes remain in every setting &mdash; 2.4&ndash;11.1% of these conditional subsets &mdash; so <strong>Broadcast does not pointwise dominate PER</strong>. A router that always escalates to the most expensive protocol therefore leaves solves on the table as well as burning tokens.</p>
+  <p class="tnote">Source: <code>anc/per_broadcast_interaction.csv</code>.</p>
+</section>
+
+<section id="code" class="wrap" aria-labelledby="h-code">
+  <h2 id="h-code"><span class="kicker">Artifacts</span>Code and data quickstart</h2>
+  <p>The release has three pieces: the <strong>code repository</strong>, the <strong>dataset card</strong> with matched protocol traces and per-problem outcome labels, and the <strong>research card</strong>. Machine-readable aggregate tables ship alongside the paper; every number on this page comes from them.</p>
+
+  <p>To get the code and set up an environment:</p>
+  <pre><code>git clone https://github.com/ChihHsuan-Yang/EMNLP_Cost-Aware-Protocol-Routing.git
+make setup
+make test</code></pre>
+  <p class="tnote"><strong>See the repository for the exact, tested commands.</strong> The lines above are the generic entry points only; the README is authoritative for environment setup, data download, and the analysis and figure pipelines. Pick a reproduction path in <a href="#reproduce">Reproduce the paper</a> below.</p>
+
+  <dl class="kv">
+    <dt>Code</dt><dd><a href="https://github.com/ChihHsuan-Yang/EMNLP_Cost-Aware-Protocol-Routing">github.com/ChihHsuan-Yang/EMNLP_Cost-Aware-Protocol-Routing</a></dd>
+    <dt>Dataset card</dt><dd><a href="https://huggingface.co/datasets/AgentsSci/EMNLP_Cost-Aware-Protocol-Routing">huggingface.co/datasets/AgentsSci/EMNLP_Cost-Aware-Protocol-Routing</a></dd>
+    <dt>Research card</dt><dd><a href="https://huggingface.co/AgentsSci/EMNLP_Cost-Aware-Protocol-Routing">huggingface.co/AgentsSci/EMNLP_Cost-Aware-Protocol-Routing</a></dd>
+    <dt>Paper</dt><dd><a href="https://arxiv.org/abs/2608.14927">arXiv:2608.14927</a> &middot; <a href="https://arxiv.org/pdf/2608.14927">PDF</a></dd>
+  </dl>
+  <p class="tnote">Trace and per-problem outcome artifacts are subject to each upstream benchmark's terms.</p>
+</section>
+
+<section id="reproduce" class="wrap" aria-labelledby="h-reproduce">
+  <h2 id="h-reproduce"><span class="kicker">Run it yourself</span>Reproduce the paper</h2>
+  <p>There are three distinct entry points, ordered by what they cost you. Start at the top; each one is a superset of the effort of the one above it.</p>
+
+  <div class="repro">
+    <article class="rcard">
+      <p class="rtag">Entry point 1</p>
+      <h3>Five-minute smoke test</h3>
+      <p class="rcost">No model API &middot; no download &middot; minutes</p>
+      <p>Runs the pipeline end to end on a tiny committed fixture, purely to prove your checkout and environment work. It does not reproduce any published number.</p>
+      <pre><code>make smoke</code></pre>
+      <p><a href="https://github.com/ChihHsuan-Yang/EMNLP_Cost-Aware-Protocol-Routing#readme">Setup and smoke test in the repository &rarr;</a></p>
+    </article>
+
+    <article class="rcard">
+      <p class="rtag">Entry point 2</p>
+      <h3>Offline paper reproduction</h3>
+      <p class="rcost">No model calls &middot; released outcomes &middot; deterministic</p>
+      <p>Recreates the principal tables and figures from the released per-problem outcome and cost records. This is the path that reproduces published numbers, because the model outputs are already fixed on disk.</p>
+      <pre><code>make reproduce-tables</code></pre>
+      <p><a href="https://github.com/ChihHsuan-Yang/EMNLP_Cost-Aware-Protocol-Routing/blob/main/docs/reproduction/paper_artifact_matrix.md">Paper-to-code matrix: which script makes which table or figure &rarr;</a></p>
+    </article>
+
+    <article class="rcard">
+      <p class="rtag">Entry point 3</p>
+      <h3>Full protocol rerun</h3>
+      <p class="rcost">Needs model endpoints &middot; substantial compute</p>
+      <p>Reruns Baseline, Single, PER and Broadcast to generate fresh traces and outcomes. Requires a compatible OpenAI-compatible endpoint serving the solver models, and substantial compute &mdash; the matched design executes every protocol on every problem.</p>
+      <p class="tnote" style="margin-top:0">Command syntax depends on your endpoint configuration; <strong>see the repository for the exact, tested commands.</strong></p>
+      <p><a href="https://github.com/ChihHsuan-Yang/EMNLP_Cost-Aware-Protocol-Routing#readme">Protocol execution instructions in the repository &rarr;</a></p>
+    </article>
+  </div>
+
+  <h3>The reproducibility boundary</h3>
+  <div class="callout warn">
+    <p>Three different things, and they are not interchangeable. <strong>(a) Exact reproduction from the released outcomes is deterministic</strong> and matches the published tables to the last digit, because the model outputs are fixed artifacts and the analysis over them is deterministic. <strong>(b) A functional rerun with compatible public models will produce similar findings but not identical numbers</strong> &mdash; different serving stacks and model builds give different outputs, so the qualitative conclusions should hold while individual figures move. <strong>(c) Exact reproduction of the original historical execution is not possible.</strong> The original serving environment no longer exists and no model snapshot was version-pinned, so those specific traces cannot be regenerated; they can only be read from the release.</p>
+  </div>
+
+  <dl class="kv">
+    <dt>Paper-to-code matrix</dt><dd><a href="https://github.com/ChihHsuan-Yang/EMNLP_Cost-Aware-Protocol-Routing/blob/main/docs/reproduction/paper_artifact_matrix.md"><code>docs/reproduction/paper_artifact_matrix.md</code></a></dd>
+    <dt>Dataset schema</dt><dd><a href="https://huggingface.co/datasets/AgentsSci/EMNLP_Cost-Aware-Protocol-Routing">Dataset card &mdash; fields, splits and outcome labels</a></dd>
+    <dt>Model / research card</dt><dd><a href="https://huggingface.co/AgentsSci/EMNLP_Cost-Aware-Protocol-Routing">Research card on Hugging Face</a></dd>
+    <dt>Repository</dt><dd><a href="https://github.com/ChihHsuan-Yang/EMNLP_Cost-Aware-Protocol-Routing">github.com/ChihHsuan-Yang/EMNLP_Cost-Aware-Protocol-Routing</a></dd>
+  </dl>
+</section>
+
+<section id="limitations" class="wrap" aria-labelledby="h-limitations">
+  <h2 id="h-limitations"><span class="kicker">Honest scope</span>Limitations</h2>
+  <p>These are the paper's own stated limitations, and they bound how far every number on this page travels.</p>
+  <ul>
+    <li><strong>Narrow main comparison.</strong> The main router comparison and the pre-answer confidence gate use one solver family and one math benchmark.</li>
+    <li><strong>Targeted, not universal, breadth.</strong> The broader paired matched-outcome study covers four benchmarks across three broad task families and two solvers. Post-answer confidence and held-out router analyses cover the narrower six settings formed by both solvers on OmniMath and the two LAB-Bench conditions. These are targeted robustness checks, not a claim of broad universality.</li>
+    <li><strong>One realization per cell.</strong> Each problem&ndash;protocol pair has one deterministic realized outcome. The 2,000-resample intervals quantify variation over benchmark problems, <em>not</em> fresh-run stochastic variability.</li>
+    <li><strong>The oracle is a diagnostic, not a policy.</strong> The fixed-order oracle is retrospective and uses an aggregate cost order; it is neither deployable nor an estimate of per-instance expected utility.</li>
+    <li><strong>Cost is measured in tokens.</strong> We measure cost primarily in logged tokens. Latency, monetary price, energy, parallelism, and answer quality beyond exact correctness can change deployment preferences.</li>
+    <li><strong>Probe exclusions and variance.</strong> The post-answer probe excludes 30 unparseable outputs from its probability metrics, and confidence quality varies substantially by model and domain.</li>
+    <li><strong>No causal mechanism.</strong> The observed PER&ndash;Broadcast differences do not identify a causal mechanism; understanding why protocol value changes by task remains open.</li>
+  </ul>
+</section>
+
+<section id="cite" class="wrap" aria-labelledby="h-cite">
+  <h2 id="h-cite"><span class="kicker">Citation</span>Cite this work</h2>
+  <p>Please cite the arXiv preprint. The EMNLP 2026 proceedings entry does not exist yet; we will update this block when volume and page numbers are assigned.</p>
+  <pre id="bibtex"><code>@article{yang2026protocolrouting,
+  title  = {LLMs Can Predict Failure Risk, But Struggle to Predict Which
+            Collaboration Protocol Pays Off: Cost-Aware Protocol Routing
+            Across Reasoning Tasks},
+  author = {Yang, Chih-Hsuan and Jiang, Jingyan and Yang, Cheng-Hau and
+            Vasudevan, Vikram and Zheng, Huihuo and Vishwanath, Venkatram
+            and Thakur, Rajeev},
+  year   = {2026},
+  eprint = {2608.14927},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CL},
+  url    = {https://arxiv.org/abs/2608.14927},
+  note   = {Accepted at EMNLP 2026}
+}</code></pre>
+  <div class="copyrow"><button type="button" class="copybtn" data-copy="bibtex">Copy BibTeX</button></div>
+</section>
+
+<section id="ack" class="wrap" aria-labelledby="h-ack">
+  <h2 id="h-ack"><span class="kicker">Support</span>Acknowledgments</h2>
+  <p>This research used resources of the Argonne Leadership Computing Facility, a U.S. Department of Energy (DOE) Office of Science user facility at Argonne National Laboratory (ANL) operated under Contract No. DE-AC02-06CH11357.</p>
+</section>
+
+<section id="team" class="wrap" aria-labelledby="h-team">
+  <h2 id="h-team"><span class="kicker">Authors</span>Team and contact</h2>
+  <ul class="team">
+    <li><span class="nm">Chih-Hsuan Yang</span><span class="af">Argonne National Laboratory</span></li>
+    <li><span class="nm">Jingyan Jiang</span><span class="af">Argonne National Laboratory</span></li>
+    <li><span class="nm">Cheng-Hau Yang</span><span class="af">Argonne National Laboratory</span></li>
+    <li><span class="nm">Vikram Vasudevan</span><span class="af">Oregon State University</span></li>
+    <li><span class="nm">Huihuo Zheng</span><span class="af">Argonne National Laboratory</span></li>
+    <li><span class="nm">Venkatram Vishwanath</span><span class="af">Argonne National Laboratory</span></li>
+    <li><span class="nm">Rajeev Thakur</span><span class="af">Argonne National Laboratory</span></li>
+  </ul>
+  <p style="margin-top:18px">Questions, corrections, or requests about the released artifacts: <a href="mailto:bellayang@anl.gov">bellayang@anl.gov</a>.</p>
+</section>
+
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <p><strong>LLMs Can Predict Failure Risk, But Struggle to Predict Which Collaboration Protocol Pays Off: Cost-Aware Protocol Routing Across Reasoning Tasks</strong> &mdash; EMNLP 2026 accepted paper.</p>
+    <p>Argonne National Laboratory &middot; Oregon State University. Figures reproduced from the camera-ready paper. Every statistic on this page is drawn from the paper's machine-readable aggregate tables.</p>
+    <p class="totop"><a href="#top">Back to top &uarr;</a></p>
+  </div>
+</footer>
+
+<script src="assets/js/main.js" defer></script>
+</body>
+</html>

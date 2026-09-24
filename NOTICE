@@ -1,0 +1,55 @@
+NOTICE
+======
+
+This repository is the public research artifact for the EMNLP 2026 paper
+"LLMs Can Predict Failure Risk, But Struggle to Predict Which Collaboration
+Protocol Pays Off: Cost-Aware Protocol Routing Across Reasoning Tasks"
+(arXiv:2608.14927).
+
+Code in this repository is released under the MIT License (see LICENSE).
+
+--------------------------------------------------------------------------
+Upstream benchmarks
+--------------------------------------------------------------------------
+
+This artifact reports measured outcomes of language-model protocol executions
+on problems drawn from the benchmarks below. We do NOT redistribute upstream
+problem text or gold answers. We release stable problem identifiers, derived
+per-protocol outcomes, and instructions for reconstructing the inputs from the
+pinned upstream releases. Each benchmark remains subject to its own license.
+
+* Omni-MATH - https://huggingface.co/datasets/KbsdJames/Omni-MATH
+  License: Apache-2.0.
+  Used as a filtered subset of 4,181 competition-mathematics problems.
+
+* JEEBench - https://huggingface.co/datasets/daman1209arora/jeebench
+  License: MIT. 515 problems.
+
+* SciBench - https://huggingface.co/datasets/xw27/scibench
+  License: MIT (see the upstream repository's LICENSE file; the Hugging Face
+  dataset card does not currently declare a license tag). 565 problems.
+
+* LAB-Bench - https://huggingface.co/datasets/futurehouse/lab-bench
+  License: CC-BY-SA-4.0. FutureHouse.
+  Pinned upstream revision: 5c77cec648430f30611808808861eb86f81d5eaa.
+  Two text-only slices are used: a strict slice (741 problems) and a broader
+  text-no-tool slice (1,542 problems). Image-dependent subsets (FigQA, TableQA)
+  are excluded because the protocols studied here are text-only.
+
+Please cite the original benchmark authors when using these identifiers.
+
+--------------------------------------------------------------------------
+Foundation models
+--------------------------------------------------------------------------
+
+The solver families evaluated here (openai/gpt-oss-120b and
+google/gemma-4-31B-it) are third-party models. This artifact does not
+redistribute, retrain, or claim ownership of those model weights.
+
+--------------------------------------------------------------------------
+Acknowledgments
+--------------------------------------------------------------------------
+
+This research used resources of the Argonne Leadership Computing Facility, a
+U.S. Department of Energy (DOE) Office of Science user facility at Argonne
+National Laboratory (ANL) operated under Contract No. DE-AC02-06CH11357.

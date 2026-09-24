@@ -1,0 +1,65 @@
+# ===========================================================================
+# DATASET: JEEBench (text-only slice)
+# ===========================================================================
+# Indian Joint Entrance Examination problems: physics, chemistry, mathematics.
+# Single-answer and multi-answer multiple choice plus numeric.
+# ===========================================================================
+
+dataset_id: jeebench
+display_name: JEEBench (text-only)
+version: "prepare_science_benchmarks-text_only"
+domain: science
+
+loader: jsonl              # config_resolver.py::GenericJsonlLoader
+path: ${DATA_ROOT}/science-benchmarks/jeebench/all.jsonl
+expected_rows: 515
+
+obtain:
+  upstream_url: https://github.com/dair-iitd/jeebench
+  pinned_revision:
+    unknown: true
+    comment: >-
+      The preparation script clones the upstream git repository with no pinned
+      commit (scripts/prepare_science_benchmarks.py SOURCE_REPOS). Searched:
+      that script, data/science-benchmarks/{README.md,manifest.json}, and
+      /tmp/emnlp_release/hf_dataset_staging/registry/benchmarks.csv -- the
+      registry records the version as "text_only slice of the 515-problem
+      public release" with no hash. Pin it yourself for your own rerun.
+  build_command: |
+    python scripts/prepare_science_benchmarks.py --fetch-sources --datasets jeebench
+
+filtering:
+  rule: >-
+    A conservative phrase-based filter removes problems that appear to need a
+    missing figure, image, diagram, or external data table ("as shown in the
+    figure", "from the image", "see figure", ...). Excluded rows are written to
+    text_only/excluded_missing_artifact.jsonl with their exclusion reasons.
+  rows_total: 515
+  rows_text_only: 515
+  rows_excluded_missing_artifact: 0
+  note: >-
+    JEEBench loses NOTHING to the text-only filter, so all.jsonl and
+    text_only/all.jsonl are the same 515 rows.
+
+field_mapping:
+  input:              [input, question, problem]
+  answer:             [answer, answer_number, label]
+  reference_solution: [reference_solution, solution]
+  metadata_passthrough: >-
+    every remaining key survives into metadata, including id, source, subject,
+    question_type, problem_index, license, llm_only_text_suitable.
+
+field_mapping_warning: >-
+  The JSONL loader reads `answer` BEFORE `answer_number` -- the OPPOSITE of the
+  omni-math loader. That is correct here, because these rows carry an
+  authoritative `answer`. Do not unify the two loaders.
+
+paper_use:
+  executed_rows: 515
+  settings: [jeebench__text_only__gpt_oss_120b, jeebench__text_only__gemma_4_31b]
+  protocols: [baseline, single, per, broadcast]
+
+license: MIT
+redistribution: >-
+  Problem text is NOT redistributed by this release (ids and outcomes only),
+  though the MIT license would permit it with attribution.

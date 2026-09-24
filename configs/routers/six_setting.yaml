@@ -1,0 +1,58 @@
+# Six-setting router evaluation (the post-review retraining).
+#
+# One router is trained per (solver, benchmark) setting, so the router never
+# transfers across settings. Fully OFFLINE.
+
+split:
+  name: six_setting_70_15_15_seed20260712
+  scheme: stratified
+  stratify_by: oracle_label
+  train_ratio: 0.7
+  dev_ratio: 0.15
+  test_ratio: 0.15
+  seed: 20260712
+  unit: problem_uid
+  protocol: >-
+    Hyperparameters are chosen on DEV only. The model is then refit on train+dev
+    and scored ONCE on the untouched test ids. The test ids are identical across
+    every router in a setting, which is what makes the paired differences valid.
+
+settings:
+  - omnimath2__competition_math_4181__gemma_4_31b
+  - omnimath2__competition_math_4181__gpt_oss_120b
+  - labbench__llm_strict__gemma_4_31b
+  - labbench__llm_strict__gpt_oss_120b
+  - labbench__text_no_tool__gemma_4_31b_text_no_tool
+  - labbench__text_no_tool__gpt_oss_120b_text_no_tool
+
+routers:
+  metadata_bucket_majority:
+    kind: heuristic
+    bucket_rule: >-
+      difficulty_tier, else lab_bench_subset, else source, else subtask, else
+      dataset/domain/global
+    requires_inference: false
+  metadata_logreg:
+    kind: learned
+    text_features: false
+    requires_inference: false
+  text_metadata_logreg:
+    kind: learned
+    text_features: true
+    requires_inference: false
+
+hyperparameters:
+  grid:
+    C: [0.25, 1.0, 4.0]
+    class_weight: [null, balanced]
+  selection_metric: dev macro-F1, then dev solve rate, then oracle gap
+  refit_before_test: train+dev
+
+bootstrap:
+  resamples: 2000
+  seed: 20260713
+  unit: problem_uid
+  interval: percentile
+  paired_differences: >-
+    Router-minus-baseline and router-minus-tier-majority are PAIRED: one
+    resample of problem indices is applied to both arms so the pairing survives.

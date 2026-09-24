@@ -1,0 +1,28 @@
+name: link-check
+
+on:
+  push:
+    branches: [main, public-release]
+  pull_request:
+  schedule:
+    # Weekly, so a link that rots after release is noticed without a human checking.
+    - cron: "37 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check links in Markdown and the project site
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --no-progress
+            --max-retries 3
+            --accept 200,206,429
+            --exclude-path docs/provenance
+            "**/*.md"
+            "docs/site/index.html"
+          fail: true

@@ -1,0 +1,79 @@
+# ===========================================================================
+# DATASET: LAB-Bench, llm_strict slice (biology, text-only, closed-book)
+# ===========================================================================
+# The narrower of the two LAB-Bench slices: subsets whose evidence is IN the
+# prompt, so an LLM-only agent with no tools can legitimately attempt them.
+#
+# This is the ONE benchmark with a pinned upstream revision. Use it.
+# ===========================================================================
+
+dataset_id: labbench_strict
+display_name: LAB-Bench (llm_strict)
+version: "futurehouse/lab-bench@5c77cec648430f30611808808861eb86f81d5eaa/llm_strict"
+domain: biology
+
+loader: jsonl
+path: ${DATA_ROOT}/lab-bench-public/llm_strict/all.jsonl
+expected_rows: 741
+
+obtain:
+  upstream_url: https://huggingface.co/datasets/futurehouse/lab-bench
+  pinned_revision: 5c77cec648430f30611808808861eb86f81d5eaa
+  pinned_revision_source: >-
+    data/lab-bench-public/manifest.json ("source_revision") and
+    data/lab-bench-public/README.md ("Frozen upstream revision"). This is the
+    only benchmark in the paper with a recorded upstream revision.
+  split: train
+  build_command: |
+    python scripts/prepare_lab_bench_llm.py --output data/lab-bench-public
+
+filtering:
+  included_subsets:
+    CloningScenarios: 33
+    ProtocolQA: 108
+    SeqQA: 600
+  total: 741
+  excluded_subsets:
+    FigQA: "181 public examples; requires figure image assets"
+    TableQA: "244 public examples; requires table image assets, not clean text tables"
+  row_level_exclusions: >-
+    None. No row was dropped from within an included subset.
+  local_tier_naming: >-
+    The repository calls llm_strict "LAB-Bench Tier 1" and text_no_tool
+    "Tier 2". These local names are UNRELATED to Omni-MATH difficulty tiers.
+
+multiple_choice_construction:
+  gold_label: >-
+    The shuffled multiple-choice option LETTER, e.g. "A". The agent must end
+    with exactly one boxed option letter, \boxed{A}.
+  option_shuffling: >-
+    DETERMINISTIC, derived from the LAB-Bench row id and the ideal answer, so
+    rerunning the preparation script reproduces identical files. If you rebuild
+    with a different script your option letters will NOT match the paper's.
+  withheld_from_prompt: >-
+    The public LAB-Bench canary field is deliberately excluded from the
+    agent-facing prompt. Source DOI fields and held-out key-passage fields,
+    where present upstream, are also withheld -- they are evaluator-side
+    metadata, not agent evidence.
+
+field_mapping:
+  input:              [input, question, problem]
+  answer:             [answer, answer_number, label]
+  reference_solution: [reference_solution, solution]
+  metadata_passthrough: >-
+    id, original_id, lab_bench_slice, lab_bench_subset, subtask, options,
+    answer_text, prompt_condition, domain, source.
+
+field_mapping_note: >-
+  The gold answer here is a bare option letter, so the judge's task is letter
+  comparison rather than mathematical equivalence. Expect a very different
+  judge-error profile from the math benchmarks.
+
+paper_use:
+  executed_rows: 741
+  settings: [labbench__llm_strict__gpt_oss_120b, labbench__llm_strict__gemma_4_31b]
+  protocols: [baseline, single, per, broadcast]
+  analyses: [matched, confidence, router, interaction]
+
+license: CC-BY-SA-4.0
+redistribution: ids and outcomes only; problem text withheld.
