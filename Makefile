@@ -17,7 +17,7 @@ OUTPUT_DIR    ?= outputs
 FIXTURE_DIR   := tests/fixtures
 
 .DEFAULT_GOAL := help
-.PHONY: help setup test smoke reproduce-tables reproduce-figures lint clean
+.PHONY: help setup test smoke data validate-data reproduce-tables reproduce-figures lint clean
 
 help:
 	@echo "protocol-routing -- offline reproduction targets"
@@ -57,6 +57,38 @@ smoke:
 	@echo "== smoke: pytest (fixture only) =="
 	$(PYTHON) -m pytest tests -q
 	@echo "== smoke: OK =="
+
+# ---------------------------------------------------------------------------
+# Data: download and validate the released tables.
+#
+# The per-problem data lives on Hugging Face rather than in git, because it is
+# too large to belong in a repository. These two targets are the documented way
+# to fetch it and to check what you fetched.
+# ---------------------------------------------------------------------------
+
+DATA_DIR ?= data/emnlp_protocol_routing
+HF_DATASET ?= AgentsSci/EMNLP_Cost-Aware-Protocol-Routing
+
+data:
+	@command -v hf >/dev/null 2>&1 || { \
+		echo "ERROR: the 'hf' CLI was not found."; \
+		echo "  pip install -U huggingface_hub"; \
+		exit 2; \
+	}
+	hf download $(HF_DATASET) --repo-type dataset --local-dir $(DATA_DIR)
+	@echo "== data: downloaded to $(DATA_DIR) =="
+	@echo "   next: make validate-data"
+
+validate-data:
+	@if [ ! -f "$(DATA_DIR)/validate.py" ]; then \
+		echo "ERROR: $(DATA_DIR)/validate.py not found. Run 'make data' first,"; \
+		echo "  or set DATA_DIR=/path/to/downloaded/dataset"; \
+		exit 2; \
+	fi
+	@# Deliberately plain python: the validator is stdlib-only by design, so that
+	@# it runs for a user who has installed nothing yet.
+	cd $(DATA_DIR) && $(PYTHON) validate.py
+
 
 reproduce-tables:
 	@if [ -z "$(MATCHED_DIR)" ]; then \
