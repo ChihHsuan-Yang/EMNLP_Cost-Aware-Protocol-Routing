@@ -402,6 +402,10 @@ a.figzoom {
   position: relative;
   border-radius: 6px;
   outline-offset: 3px;
+  /* A tooltip is not an affordance: it needs a pointer, a hover, and a wait,
+     and it does not exist at all on touch. Show the cursor change, and keep a
+     persistent caption (below) so the zoom is discoverable without hovering. */
+  cursor: zoom-in;
 }
 a.figzoom img {
   display: block;
@@ -410,31 +414,16 @@ a.figzoom img {
   border-radius: 6px;
 }
 a.figzoom::after {
-  content: "Open full size \2197";
-  position: absolute;
-  right: .55rem;
-  bottom: .55rem;
-  padding: .3rem .55rem;
-  font-size: .78rem;
-  line-height: 1;
-  border-radius: 4px;
-  background: rgba(22, 33, 58, .82);
-  color: #fff;
-  opacity: 0;
-  transition: opacity .15s ease-in-out;
-  pointer-events: none;
+  content: "\2921  open full size";
+  display: block;
+  margin-top: 6px;
+  font-size: .82rem;
+  line-height: 1.3;
+  color: var(--accent, #4C78A8);
+  font-variant-numeric: tabular-nums;
 }
 a.figzoom:hover::after,
-a.figzoom:focus-visible::after { opacity: 1; }
-
-/* Keep the affordance discoverable without a pointer, and for anyone who has
-   asked for reduced motion (where a hover transition may not be noticed). */
-@media (hover: none) {
-  a.figzoom::after { opacity: 1; }
-}
-@media (prefers-reduced-motion: reduce) {
-  a.figzoom::after { transition: none; }
-}
+a.figzoom:focus-visible::after { text-decoration: underline; }
 
 /* Author profile links. Styling is ready so adding one is a single <a> tag;
    see the comment beside the author list in index.html. */

@@ -128,6 +128,11 @@ tolerance applied to bootstrap intervals.
 
 ## What is not released
 
+> A **trained router checkpoint is released** — see the list above and the
+> [model card](https://huggingface.co/AgentsSci/EMNLP_Cost-Aware-Protocol-Routing).
+> The only model weights withheld are the third-party foundation models, which
+> were never ours to publish. These two lists do not contradict each other.
+
 - **Upstream problem text and gold answers.** We release stable identifiers and
   our measured outcomes instead, plus reconstruction instructions and pinned
   upstream revisions. See [`NOTICE`](NOTICE) for each benchmark's license.

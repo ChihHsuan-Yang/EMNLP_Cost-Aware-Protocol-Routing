@@ -146,8 +146,11 @@
   var narrow = window.matchMedia('(max-width: 720px)');
 
   function sync(e) {
-    // Only force a state when crossing the breakpoint, so a reader who opened
-    // the menu deliberately is not overridden while they are using it.
+    // Desktop opens it; mobile leaves it closed. The element ships WITHOUT the
+    // open attribute, so if this script never runs a phone gets a collapsed
+    // menu rather than 12 links above the fold -- the safer failure. Desktop
+    // without JS still shows every link, because CSS force-shows the list and
+    // hides the toggle above 720px regardless of open state.
     nav.open = !(e.matches);
   }
   sync(narrow);

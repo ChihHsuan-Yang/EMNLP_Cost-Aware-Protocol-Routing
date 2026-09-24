@@ -70,7 +70,7 @@
 <nav class="nav" aria-label="Section navigation">
   <div class="nav-inner">
     <a class="nav-brand" href="#top">Protocol&nbsp;Routing</a>
-    <details class="nav-collapse" open>
+    <details class="nav-collapse">
       <summary>Sections</summary>
       <ul class="nav-links">
       <li><a href="#finding">Finding</a></li>
@@ -137,7 +137,7 @@
   <p class="lede" style="margin-top:18px">Concretely: a post-answer, pre-collaboration <code>gpt-oss-120b</code> probe ranks Baseline failures at <strong>0.8847 AUROC</strong> (4,151 parseable of 4,181; 95% CI [0.8732, 0.8955]). The same score stays useful for &ldquo;does any collaboration help&rdquo; (<strong>0.7683 AUPRC</strong>), but is much weaker for PER-specific (<strong>0.1674 AUPRC</strong>) and Broadcast-specific (<strong>0.1041 AUPRC</strong>) value. Confidence supports initial escalation; protocol-specific cost-aware routing remains unresolved.</p>
 
   <figure>
-    <a class="figzoom" href="assets/img/fig1_main_combined.png" target="_blank" rel="noopener" title="Open the full-resolution figure (4105×1918) in a new tab"><img src="assets/img/fig1_main_combined.png" width="4105" height="1918"
+    <a class="figzoom" href="assets/img/fig1_main_combined.png" target="_blank" rel="noopener" title="Open the full-resolution figure (4105×1918) in a new tab"><img src="assets/img/fig1_main_combined@1x.png" srcset="assets/img/fig1_main_combined@1x.png 1x, assets/img/fig1_main_combined@2x.png 2x" width="1080" height="505"
          alt="Two-panel overview figure. Left panel: stacked bars showing the fixed-order-oracle label composition across difficulty tiers, with Baseline, Single, PER, Broadcast and None shares summing to one within each tier; the Baseline share shrinks and the costlier-protocol and None shares grow as difficulty rises. Right panel: a solve-rate versus average-token-cost frontier in which the self-confidence gate sits up and to the left of the frozen large-language-model routers, which buy extra solves with substantially more tokens." loading="eager" decoding="async"></a>
     <figcaption><b>Overview.</b> (a) Fixed-order-oracle labels by difficulty tier; fractions sum to 1 within each tier. (b) Solve&ndash;cost frontier relative to Tier-majority; upper-left is better. The self-confidence gate improves the low-cost frontier, while larger frozen routers buy additional solves through substantially more token use. Figure&nbsp;1 of the paper (<code>fig1_main_combined</code>).</figcaption>
   </figure>
@@ -262,12 +262,12 @@
   <p>After <code>gpt-oss-120b</code> produces its Baseline answer, we ask it for P(Baseline correct). The probe sees only the problem, the allowed metadata, and its own Baseline <em>final answer</em>. It sees no reasoning trace, no gold answer, no correctness label, no oracle label, and no collaboration outcome. Failure risk is then 1&nbsp;&minus;&nbsp;P(correct).</p>
 
   <figure>
-    <a class="figzoom" href="assets/img/fig3a_reliability.png" target="_blank" rel="noopener" title="Open the full-resolution figure (1849×1609) in a new tab"><img src="assets/img/fig3a_reliability.png" width="1849" height="1609"
+    <a class="figzoom" href="assets/img/fig3a_reliability.png" target="_blank" rel="noopener" title="Open the full-resolution figure (1849×1609) in a new tab"><img src="assets/img/fig3a_reliability@1x.png" srcset="assets/img/fig3a_reliability@1x.png 1x, assets/img/fig3a_reliability@2x.png 2x" width="700" height="609"
          alt="Reliability diagram comparing self-reported single-pass confidence on the horizontal axis with empirical Baseline success rate on the vertical axis, plotted against a diagonal line of perfect calibration." loading="lazy" decoding="async"></a>
     <figcaption><b>Self-assessment reliability.</b> Self-reported single-pass confidence compared with empirical Baseline success, for the cleaned pre-answer confidence probe (<code>fig3a_reliability</code>).</figcaption>
   </figure>
   <figure>
-    <a class="figzoom" href="assets/img/fig3b_oracle_by_confidence.png" target="_blank" rel="noopener" title="Open the full-resolution figure (1946×1927) in a new tab"><img src="assets/img/fig3b_oracle_by_confidence.png" width="1946" height="1927"
+    <a class="figzoom" href="assets/img/fig3b_oracle_by_confidence.png" target="_blank" rel="noopener" title="Open the full-resolution figure (1946×1927) in a new tab"><img src="assets/img/fig3b_oracle_by_confidence@1x.png" srcset="assets/img/fig3b_oracle_by_confidence@1x.png 1x, assets/img/fig3b_oracle_by_confidence@2x.png 2x" width="700" height="693"
          alt="Stacked bar chart showing the distribution of fixed-order-oracle routing labels within each bin of self-reported confidence; the Baseline share dominates high-confidence bins while costlier-protocol and None labels concentrate in low-confidence bins." loading="lazy" decoding="async"></a>
     <figcaption><b>Oracle labels by confidence bin.</b> Fixed-order-oracle routing labels within confidence bins (<code>fig3b_oracle_by_confidence</code>). Confidence separates &ldquo;Baseline is enough&rdquo; from &ldquo;something more is needed&rdquo;, but within the low-confidence region the costlier labels remain mixed &mdash; which is the selection problem the paper leaves open.</figcaption>
   </figure>
@@ -322,7 +322,7 @@
   </div>
 
   <figure>
-    <a class="figzoom" href="assets/img/fig2_matched_benchmarks.png" target="_blank" rel="noopener" title="Open the full-resolution figure (3961×1328) in a new tab"><img src="assets/img/fig2_matched_benchmarks.png" width="3961" height="1328"
+    <a class="figzoom" href="assets/img/fig2_matched_benchmarks.png" target="_blank" rel="noopener" title="Open the full-resolution figure (3961×1328) in a new tab"><img src="assets/img/fig2_matched_benchmarks@1x.png" srcset="assets/img/fig2_matched_benchmarks@1x.png 1x, assets/img/fig2_matched_benchmarks@2x.png 2x" width="1080" height="362"
          alt="Heatmap grid of matched solve and coverage percentages. Rows are the ten solver-by-condition settings; columns are the Baseline, Single, PER and Broadcast protocols plus the retrospective fixed-order oracle. Cell hue identifies the protocol and deeper tint indicates higher solve or coverage, with the strongest deployable fixed protocol in each row outlined." loading="lazy" decoding="async"></a>
     <figcaption><b>Matched breadth.</b> Solve/coverage percentages across four benchmarks (five prompt conditions), four protocols, and two solver families. Cell hue identifies the protocol; deeper tint indicates higher solve/coverage. The outlined cell is the strongest deployable fixed protocol in each row. Oracle is retrospective fixed-order coverage computed from the same four realized outcomes. Unlike Table&nbsp;2, this figure uses all matched problems available in each setting (<code>fig2_matched_benchmarks</code>).</figcaption>
   </figure>
