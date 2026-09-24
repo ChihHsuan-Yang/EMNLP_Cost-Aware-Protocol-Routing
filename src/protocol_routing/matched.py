@@ -173,6 +173,16 @@ def load_matched_dir(
         every paper table by this mechanism.
     """
     allow = set(PAPER_SETTINGS if settings is None else settings)
+
+    # The released Hugging Face dataset ships ONE combined table
+    # (``data/matched_labels.csv``) with a ``setting_id`` column, while the
+    # internal extracts ship one CSV per setting in a directory.  Accept both:
+    # a reader who follows the documented download should not have to reshape
+    # the data before the documented reproduction command will run.
+    candidate = Path(directory)
+    if candidate.is_file():
+        return load_matched_combined(candidate, settings=settings, strict=strict)
+
     root = io.require_dir(directory, what="matched-label directory")
     tables: dict[str, MatchedTable] = {}
     for path in sorted(root.glob("*.csv")):
@@ -186,6 +196,60 @@ def load_matched_dir(
         missing = sorted(allow - set(tables))
         if missing:
             raise MatchedTableError(f"Missing matched-label tables for settings: {missing}")
+    return [tables[s] for s in sorted(tables)]
+
+
+def load_matched_combined(
+    path: str | Path,
+    *,
+    settings: Sequence[str] | None = None,
+    strict: bool = True,
+) -> list[MatchedTable]:
+    """Load the released single-file matched-label table.
+
+    The Hugging Face release publishes every setting in one CSV keyed by
+    ``setting_id``.  This splits it back into per-setting tables so that the
+    rest of the pipeline sees exactly the same objects as the directory form.
+    """
+    allow = set(PAPER_SETTINGS if settings is None else settings)
+    resolved = io.require_file(path, what="matched-label CSV")
+    frame = pd.read_csv(resolved)
+
+    key = "setting_id" if "setting_id" in frame.columns else "setting"
+    if key not in frame.columns:
+        raise MatchedTableError(
+            f"{resolved.name} has neither a 'setting_id' nor a 'setting' column, "
+            "so it cannot be split into per-setting tables."
+        )
+
+    tables: dict[str, MatchedTable] = {}
+    for setting, group in frame.groupby(key, sort=True):
+        setting = str(setting)
+        if strict and setting not in allow:
+            continue
+        part = group.copy()
+        if "setting" not in part.columns:
+            part["setting"] = setting
+        # The release normalises the problem key to ``problem_id``; the internal
+        # extracts call it ``problem_uid``. Accept either, without mutating the
+        # released column, so both forms validate identically.
+        if "problem_uid" not in part.columns and "problem_id" in part.columns:
+            part["problem_uid"] = part["problem_id"]
+        # Likewise for the oracle column name.
+        if ("oracle_cheapest_successful" not in part.columns
+                and "oracle_label" in part.columns):
+            part["oracle_cheapest_successful"] = part["oracle_label"]
+            part = part.drop(columns=["oracle_label"])
+        validate_matched_frame(part, source=f"{resolved.name}[{setting}]")
+        part["oracle_label"] = oracle_label_series(part)
+        tables[setting] = MatchedTable(setting=setting, frame=part.reset_index(drop=True))
+
+    if strict:
+        missing = sorted(allow - set(tables))
+        if missing:
+            raise MatchedTableError(
+                f"Missing matched-label rows for settings: {missing} in {resolved.name}"
+            )
     return [tables[s] for s in sorted(tables)]
 
 

@@ -126,9 +126,16 @@ artifact. Read its output before trusting anything downstream.
 ### 6.3 Reproduce the tables and figures
 
 ```bash
-make reproduce-tables    # regenerates aggregates and diffs them against results/aggregate/
+make reproduce-tables \
+  MATCHED_DIR=data/emnlp_protocol_routing/data/matched_labels.csv \
+  REFERENCE_DIR=results/aggregate
+
 make reproduce-figures
 ```
+
+`MATCHED_DIR` accepts either the single combined `matched_labels.csv` you just
+downloaded, or a directory of per-setting CSVs. The released dataset ships the
+combined form, so the command above is the one most readers want.
 
 `make reproduce-tables` **fails loudly** on any mismatch rather than reporting
 success. See [reproduction.md](reproduction.md) for the numerical tolerances —
