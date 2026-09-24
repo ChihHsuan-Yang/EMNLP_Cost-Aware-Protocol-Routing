@@ -87,9 +87,21 @@ download, no GPU, no API key, no allocation.
 To reproduce the published aggregates from the full released outcomes:
 
 ```bash
-make data              # download the released per-problem outcomes from Hugging Face
-make reproduce-tables  # regenerate the aggregate tables and diff against results/aggregate/
-make reproduce-figures # regenerate the figures
+# 1. download the released per-problem outcomes from Hugging Face
+make data
+
+# 2. check what you downloaded (row counts, coverage, checksums)
+make validate-data
+
+# 3. regenerate the aggregate tables and diff them against results/aggregate/
+#    This exits nonzero on any mismatch.
+make reproduce-tables \
+  MATCHED_DIR=data/emnlp_protocol_routing/data/matched_labels.csv \
+  REFERENCE_DIR=results/aggregate
+
+# 4. regenerate the figures
+make reproduce-figures \
+  MATCHED_DIR=data/emnlp_protocol_routing/data/matched_labels.csv
 ```
 
 Every command above is exercised in CI. See [docs/reproduction.md](docs/reproduction.md)

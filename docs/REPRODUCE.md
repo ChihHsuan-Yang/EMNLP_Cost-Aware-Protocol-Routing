@@ -130,7 +130,8 @@ make reproduce-tables \
   MATCHED_DIR=data/emnlp_protocol_routing/data/matched_labels.csv \
   REFERENCE_DIR=results/aggregate
 
-make reproduce-figures
+make reproduce-figures \
+  MATCHED_DIR=data/emnlp_protocol_routing/data/matched_labels.csv
 ```
 
 `MATCHED_DIR` accepts either the single combined `matched_labels.csv` you just
