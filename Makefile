@@ -8,8 +8,18 @@
 #   REFERENCE_DIR directory of the camera-ready ancillary CSVs to diff against
 # Both default to nothing; the table/figure targets tell you what to pass.
 
-PYTHON ?= python
+PYTHON ?= python3
 PIP    ?= $(PYTHON) -m pip
+
+# Where `make setup` builds its environment.
+VENV ?= .venv
+
+# Every other target runs through the venv when one exists, so that `make test`
+# after `make setup` uses what setup just installed rather than whatever
+# interpreter happens to be on PATH. Falls back to $(PYTHON) if there is no
+# venv (for CI, or for `make setup VENV=`).
+RUN_ABS := $(shell [ -x "$(CURDIR)/$(VENV)/bin/python" ] && echo "$(CURDIR)/$(VENV)/bin/python" || echo "$(PYTHON)")
+RUN := $(shell [ -x "$(VENV)/bin/python" ] && echo "$(VENV)/bin/python" || echo "$(PYTHON)")
 
 MATCHED_DIR   ?=
 REFERENCE_DIR ?=
@@ -32,25 +42,45 @@ help:
 	@echo "OFFLINE: all of the above. Protocol EXECUTION is inference-requiring"
 	@echo "and is NOT provided here; see README 'Inference-requiring steps'."
 
+# Creates a local virtual environment and installs into it. Installing into
+# whatever interpreter happens to be on PATH would put 20+ dependencies into a
+# reader's global or conda environment without asking -- a rude thing for a
+# research artifact to do on its first command.
+#
+# Set VENV= (empty) to install into the current interpreter instead:
+#   make setup VENV=
+
 setup:
-	$(PIP) install -e ".[test]"
+	@if [ -n "$(VENV)" ]; then \
+		echo "== creating $(VENV) =="; \
+		$(PYTHON) -m venv $(VENV); \
+		$(VENV)/bin/python -m pip install --quiet --upgrade pip; \
+		$(VENV)/bin/python -m pip install -e ".[test]"; \
+		echo ""; \
+		echo "== setup: OK =="; \
+		echo "   activate it with:  source $(VENV)/bin/activate"; \
+		echo "   or just run the other targets, which use $(VENV) automatically."; \
+	else \
+		echo "== installing into the current interpreter (VENV is empty) =="; \
+		$(PIP) install -e ".[test]"; \
+	fi
 
 test:
-	$(PYTHON) -m pytest tests
+	$(RUN) -m pytest tests
 
 # The smoke target must stay fast and fixture-only: no network, no endpoint,
 # no large inputs. It is the check a reader runs first.
 smoke:
 	@echo "== smoke: package imports =="
-	$(PYTHON) -c "import sys; sys.path.insert(0,'src'); import protocol_routing as p; print('protocol_routing', p.__version__)"
+	$(RUN) -c "import sys; sys.path.insert(0,'src'); import protocol_routing as p; print('protocol_routing', p.__version__)"
 	@echo "== smoke: CLI --help =="
 	@for s in build_matched_tables train_router evaluate_router analyze_confidence \
 	          analyze_protocol_interactions reproduce_paper_tables reproduce_paper_figures; do \
-		$(PYTHON) scripts/$$s.py --help > /dev/null || exit 1; \
+		$(RUN) scripts/$$s.py --help > /dev/null || exit 1; \
 		echo "  ok  scripts/$$s.py --help"; \
 	done
 	@echo "== smoke: aggregate tables from the tiny fixture =="
-	$(PYTHON) scripts/build_matched_tables.py \
+	$(RUN) scripts/build_matched_tables.py \
 		--matched_dir $(FIXTURE_DIR) \
 		--output_dir $(OUTPUT_DIR)/smoke \
 		--allow_non_paper_settings
@@ -87,7 +117,7 @@ validate-data:
 	fi
 	@# Deliberately plain python: the validator is stdlib-only by design, so that
 	@# it runs for a user who has installed nothing yet.
-	cd $(DATA_DIR) && $(PYTHON) validate.py
+	cd $(DATA_DIR) && $(RUN_ABS) validate.py
 
 
 reproduce-tables:
@@ -96,7 +126,7 @@ reproduce-tables:
 		echo "  e.g. make reproduce-tables MATCHED_DIR=data/matched_labels REFERENCE_DIR=anc"; \
 		exit 2; \
 	fi
-	$(PYTHON) scripts/reproduce_paper_tables.py \
+	$(RUN) scripts/reproduce_paper_tables.py \
 		--matched_dir $(MATCHED_DIR) \
 		$(if $(REFERENCE_DIR),--reference_dir $(REFERENCE_DIR),) \
 		--output_dir $(OUTPUT_DIR)/tables
@@ -106,7 +136,7 @@ reproduce-figures:
 		echo "ERROR: set MATCHED_DIR=/path/to/matched_labels"; \
 		exit 2; \
 	fi
-	$(PYTHON) scripts/reproduce_paper_figures.py \
+	$(RUN) scripts/reproduce_paper_figures.py \
 		--matched_dir $(MATCHED_DIR) \
 		--output_dir $(OUTPUT_DIR)/figures
 

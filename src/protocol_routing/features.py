@@ -20,6 +20,12 @@ The guard is name-based, which means it stops the mistakes people actually
 make (pasting ``baseline_correct`` into a feature list, globbing ``*_correct``
 into the metadata columns).  It cannot stop a caller who first renames
 ``baseline_correct`` to ``feature_17``; that is a deliberate act, not a slip.
+
+Its coverage is a list of spellings, so it is only as good as that list.  An
+independent audit defeated an earlier version with ``baseline_success`` -- a
+plainly-named outcome column, no disguise -- because the suffix list covered
+``*_correct`` and ``*_solved`` but not ``*_success``.  If you add an outcome
+column with a spelling not listed here, add the spelling here too.
 """
 
 from __future__ import annotations
@@ -58,6 +64,25 @@ FORBIDDEN_FEATURE_COLUMNS: frozenset[str] = frozenset(
         "cheapest_successful_protocol",
         "oracle_label",
         "any_protocol_solved",
+        # Bare outcome words. A column called simply "outcome" or "verdict" is
+        # a label in every dataset the authors have seen.
+        "outcome",
+        "verdict",
+        "failed",
+        "failure",
+        "success",
+        "succeeded",
+        "correct",
+        "incorrect",
+        "correctness",
+        "solved",
+        "result",
+        "target",
+        "label",
+        "y",
+        "y_true",
+        "y_label",
+        "ground_truth",
         "solved",
         "is_correct",
         "correct",
@@ -80,12 +105,33 @@ FORBIDDEN_FEATURE_COLUMNS: frozenset[str] = frozenset(
 
 #: Regex families that must never become features.
 FORBIDDEN_FEATURE_PATTERNS: tuple[re.Pattern[str], ...] = (
+    # Outcome families, by suffix.
     re.compile(r"^.*_correct$"),
     re.compile(r"^.*_final_passed$"),
     re.compile(r"^.*_passed$"),
+    re.compile(r"^.*_solved$"),
+    # An independent audit smuggled a verbatim copy of ``baseline_correct``
+    # through this guard under the name ``baseline_success`` -- no renaming
+    # trickery, just a spelling the suffix list did not happen to cover.  The
+    # families below close that gap.  The lesson generalises: enumerate the
+    # vocabulary people actually use for an outcome, not only the vocabulary
+    # this codebase happens to use.
+    re.compile(r"^.*_success$"),
+    re.compile(r"^.*_succeeded$"),
+    re.compile(r"^.*_failed$"),
+    re.compile(r"^.*_failure$"),
+    re.compile(r"^.*_incorrect$"),
+    re.compile(r"^.*_wrong$"),
+    re.compile(r"^.*_score$"),
+    re.compile(r"^.*_verdict$"),
+    re.compile(r"^.*_outcome$"),
+    re.compile(r"^.*_label$"),
+    # Derived-label prefixes.
     re.compile(r"^oracle(_.*)?$"),
     re.compile(r"^gold(_.*)?$"),
-    re.compile(r"^.*_solved$"),
+    re.compile(r"^cheapest(_.*)?$"),
+    re.compile(r"^first_success(_.*)?$"),
+    re.compile(r"^is_(correct|wrong|failure|success|solved)$"),
 )
 
 

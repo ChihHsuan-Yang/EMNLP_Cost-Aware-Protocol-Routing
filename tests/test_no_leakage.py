@@ -182,3 +182,56 @@ def test_renaming_a_label_column_is_out_of_scope_and_documented():
     )
     # No raise: the guard sees an innocuous name. Documented, not endorsed.
     assert "feature_17" in build_feature_frame(disguised, spec).columns
+
+
+# ---------------------------------------------------------------------------
+# Regression: spellings found by an independent audit.
+#
+# An earlier version of the guard was defeated by `baseline_success` -- a
+# verbatim copy of `baseline_correct` under a plainly-descriptive name, with no
+# renaming trickery. The suffix list covered *_correct and *_solved but not
+# *_success. These cases exist so that gap cannot silently reopen.
+# ---------------------------------------------------------------------------
+
+AUDIT_DISCOVERED_LEAKS = [
+    "baseline_success", "single_success", "per_success", "broadcast_success",
+    "outcome", "verdict", "failed", "is_failure", "correctness", "target",
+    "result", "y_true", "first_success_protocol", "cheapest_protocol",
+]
+
+# Legitimate router-visible columns. If widening the guard ever starts
+# rejecting these, the guard has become useless in the other direction.
+LEGITIMATE_FEATURES = [
+    "problem_id", "difficulty_tier", "source", "domain", "benchmark_id",
+    "subset", "prompt_condition", "legacy_tier_id", "difficulty",
+]
+
+
+@pytest.mark.parametrize("column", AUDIT_DISCOVERED_LEAKS)
+def test_audit_discovered_leak_spellings_are_refused(column):
+    assert is_forbidden(column), (
+        f"{column!r} is an outcome column under a different spelling and must "
+        "not be usable as a feature"
+    )
+
+
+@pytest.mark.parametrize("column", LEGITIMATE_FEATURES)
+def test_legitimate_feature_columns_are_still_allowed(column):
+    assert not is_forbidden(column), (
+        f"{column!r} is router-visible metadata and must remain usable; the "
+        "guard has been widened too far"
+    )
+
+
+def test_smuggled_copy_of_a_label_is_refused_end_to_end():
+    """The audit's exact attack, at the real entry point."""
+    frame = pd.DataFrame(
+        {
+            "problem_id": ["p1", "p2", "p3"],
+            "difficulty_tier": [1, 2, 3],
+            # byte-identical to baseline_correct, renamed
+            "baseline_success": [True, False, True],
+        }
+    )
+    with pytest.raises(LeakageError):
+        assert_no_leakage(frame.columns)
