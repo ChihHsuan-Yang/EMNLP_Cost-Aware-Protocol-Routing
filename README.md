@@ -104,7 +104,7 @@ make reproduce-figures \
   MATCHED_DIR=data/emnlp_protocol_routing/data/matched_labels.csv
 ```
 
-Every command above is exercised in CI. See [docs/reproduction.md](docs/reproduction.md)
+The quickstart commands (`make setup`, `make test`, `make smoke`) run in CI on every push. The data-dependent commands above require the Hugging Face download and are verified by hand against a fresh clone before each release rather than in CI. See [docs/reproduction.md](docs/reproduction.md)
 for what "reproduce" does and does not mean here, and for the numerical
 tolerance applied to bootstrap intervals.
 

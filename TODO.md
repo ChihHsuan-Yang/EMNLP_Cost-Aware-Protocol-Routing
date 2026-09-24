@@ -42,6 +42,27 @@ These do not affect any scientific claim in the paper.
   identifiers but not the exact served weights. This is why the artifact claims
   functional rather than bit-for-bit reproducibility.
 
+- **AUPRC tie handling.** The published AUPRC column was computed with an
+  average-precision function that does not break ties, and the probe emits
+  integer confidences, so scores are heavily tied (30 distinct values across
+  4,181 rows in one setting; 11 across 733 in another). The published digits
+  are therefore order-dependent at the fourth decimal for large targets, and
+  by more than a tenth for the smallest ones. Every AUROC is unaffected and
+  reproduces exactly. Future work should report AUPRC with an explicit
+  tie-handling policy, or avoid it for low-prevalence targets. See
+  `docs/provenance/auprc_tie_handling.md`.
+
+- `docs/reproduction/paper_artifact_matrix.csv` names `make reproduce-tables`
+  as the generating command for more tables than that script actually rebuilds.
+  The script regenerates the two matched-outcome tables (plus the interaction
+  table behind a flag); the confidence, router, and primary-split tables are
+  published as verified aggregates but have no one-command regeneration path in
+  this repository yet.
+
+- No checked-in expected-output fixture exists for the router path, so router
+  training is not regression-tested against a frozen expectation. It is
+  verified against the released predictions instead.
+
 - Expand the fixture suite so more of the analysis path is covered without a
   data download.
 

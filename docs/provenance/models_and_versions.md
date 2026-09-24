@@ -220,10 +220,13 @@ Verified:
   (`MAX_TOKENS="${MAX_TOKENS:-1024}"`, `--max-retries 4`,
   `REPAIR_ATTEMPTS="${REPAIR_ATTEMPTS:-2}"`). Paper agrees,
   `appendix_additional_analyses.tex` line 301.
-- Endpoint: ALCF Sophia, OpenAI-compatible vLLM. From
-  `<inventory-repo>/dhd-release-worktree/use_alcf.sh`:
-  `export OPENAI_BASE_URL="https://inference-api.alcf.anl.gov/resource_server/sophia/vllm/v1/"`
-  (a commented-out `metis` line sits above it, unused).
+- Endpoint: an institutional OpenAI-compatible vLLM deployment, configured
+  through the `OPENAI_BASE_URL` environment variable. The specific internal URL
+  is deliberately not reproduced here; it is not reachable from outside the
+  facility and is not needed to reproduce anything in this release. What matters
+  for reproduction is the interface: any OpenAI-compatible endpoint works, and
+  the released runner takes its base URL from `INFERENCE_BASE_URL`. See
+  `configs/providers/openai_compatible.example.yaml`.
 - Post-review probe and router compute ran on **Aurora** (an HPC project space),
   per the PBS jobs and `no_model_manifest.json` staging paths.
 - The endpoint does not enforce structured output:
