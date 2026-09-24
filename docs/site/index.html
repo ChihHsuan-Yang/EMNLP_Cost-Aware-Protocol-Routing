@@ -422,7 +422,7 @@
 
 <section id="code" class="wrap" aria-labelledby="h-code">
   <h2 id="h-code"><span class="kicker">Artifacts</span>Code and data quickstart</h2>
-  <p>The release has three pieces: the <strong>code repository</strong>, the <strong>dataset card</strong> with matched protocol traces and per-problem outcome labels, and the <strong>research card</strong>. Machine-readable aggregate tables ship alongside the paper; every number on this page comes from them.</p>
+  <p>The release has three pieces: the <strong>code repository</strong>, the <strong>dataset card</strong> with matched protocol traces and per-problem outcome labels, and the <strong>model card</strong> with the trained router checkpoint. Machine-readable aggregate tables ship alongside the paper; every number on this page comes from them.</p>
 
   <p>To get the code and set up an environment:</p>
   <pre><code>git clone https://github.com/ChihHsuan-Yang/EMNLP_Cost-Aware-Protocol-Routing.git
@@ -433,7 +433,7 @@ make test</code></pre>
   <dl class="kv">
     <dt>Code</dt><dd><a href="https://github.com/ChihHsuan-Yang/EMNLP_Cost-Aware-Protocol-Routing">github.com/ChihHsuan-Yang/EMNLP_Cost-Aware-Protocol-Routing</a></dd>
     <dt>Dataset card</dt><dd><a href="https://huggingface.co/datasets/AgentsSci/EMNLP_Cost-Aware-Protocol-Routing">huggingface.co/datasets/AgentsSci/EMNLP_Cost-Aware-Protocol-Routing</a></dd>
-    <dt>Research card</dt><dd><a href="https://huggingface.co/AgentsSci/EMNLP_Cost-Aware-Protocol-Routing">huggingface.co/AgentsSci/EMNLP_Cost-Aware-Protocol-Routing</a></dd>
+    <dt>Model card</dt><dd><a href="https://huggingface.co/AgentsSci/EMNLP_Cost-Aware-Protocol-Routing">huggingface.co/AgentsSci/EMNLP_Cost-Aware-Protocol-Routing</a></dd>
     <dt>Paper</dt><dd><a href="https://arxiv.org/abs/2608.14927">arXiv:2608.14927</a> &middot; <a href="https://arxiv.org/pdf/2608.14927">PDF</a></dd>
   </dl>
   <p class="tnote">Trace and per-problem outcome artifacts are subject to each upstream benchmark's terms.</p>
@@ -466,6 +466,7 @@ make setup</code></pre>
       <p>Recreates the principal tables and figures from the released per-problem outcome and cost records. This is the path that reproduces published numbers, because the model outputs are already fixed on disk.</p>
       <pre><code>make reproduce-tables</code></pre>
       <p><a href="https://github.com/ChihHsuan-Yang/EMNLP_Cost-Aware-Protocol-Routing/blob/main/docs/reproduction/paper_artifact_matrix.md">Paper-to-code matrix: which script makes which table or figure &rarr;</a></p>
+      <p class="tnote" style="margin-top:0">A <strong>trained router checkpoint</strong> is published on the model card, with its fitted feature builders, a verified label map and a runnable offline example: <code>python router_metadata_only/predict_example.py</code>. <a href="https://huggingface.co/AgentsSci/EMNLP_Cost-Aware-Protocol-Routing">Model card &rarr;</a></p>
     </article>
 
     <article class="rcard">
@@ -493,7 +494,7 @@ make setup</code></pre>
   <dl class="kv">
     <dt>Paper-to-code matrix</dt><dd><a href="https://github.com/ChihHsuan-Yang/EMNLP_Cost-Aware-Protocol-Routing/blob/main/docs/reproduction/paper_artifact_matrix.md"><code>docs/reproduction/paper_artifact_matrix.md</code></a></dd>
     <dt>Dataset schema</dt><dd><a href="https://huggingface.co/datasets/AgentsSci/EMNLP_Cost-Aware-Protocol-Routing">Dataset card &mdash; fields, splits and outcome labels</a></dd>
-    <dt>Model / research card</dt><dd><a href="https://huggingface.co/AgentsSci/EMNLP_Cost-Aware-Protocol-Routing">Research card on Hugging Face</a></dd>
+    <dt>Model card</dt><dd><a href="https://huggingface.co/AgentsSci/EMNLP_Cost-Aware-Protocol-Routing">Model card and router checkpoint on Hugging Face</a></dd>
     <dt>Repository</dt><dd><a href="https://github.com/ChihHsuan-Yang/EMNLP_Cost-Aware-Protocol-Routing">github.com/ChihHsuan-Yang/EMNLP_Cost-Aware-Protocol-Routing</a></dd>
   </dl>
 </section>
