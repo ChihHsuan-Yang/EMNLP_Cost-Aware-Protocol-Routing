@@ -8,7 +8,7 @@
 [![arXiv](https://img.shields.io/badge/arXiv-2608.14927-b31b1b)](https://arxiv.org/abs/2608.14927)
 [![PDF](https://img.shields.io/badge/Paper-PDF-333333)](https://arxiv.org/pdf/2608.14927)
 [![HF dataset](https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-Card-ffcc4d)](https://huggingface.co/datasets/AgentsSci/EMNLP_Cost-Aware-Protocol-Routing)
-[![HF model](https://img.shields.io/badge/%F0%9F%A4%97%20Research-Card-ffcc4d)](https://huggingface.co/AgentsSci/EMNLP_Cost-Aware-Protocol-Routing)
+[![HF model](https://img.shields.io/badge/%F0%9F%A4%97%20Model-Card-ffcc4d)](https://huggingface.co/AgentsSci/EMNLP_Cost-Aware-Protocol-Routing)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 [![Tests](https://github.com/ChihHsuan-Yang/EMNLP_Cost-Aware-Protocol-Routing/actions/workflows/tests.yml/badge.svg)](https://github.com/ChihHsuan-Yang/EMNLP_Cost-Aware-Protocol-Routing/actions/workflows/tests.yml)
 
@@ -120,6 +120,9 @@ tolerance applied to bootstrap intervals.
 - **PER-versus-Broadcast interaction** analyses, including the conditional
   subsets after Baseline fails and after both Baseline and Single fail.
 - The camera-ready **aggregate tables** in [`results/aggregate/`](results/aggregate/).
+- The **trained metadata-only router checkpoint** on the Hugging Face model
+  repository, with its fitted feature builders, a verified label map, and a
+  runnable offline example.
 - Protocol configurations, evaluator and probe prompts, and full provenance in
   [`docs/provenance/`](docs/provenance/).
 

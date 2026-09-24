@@ -72,6 +72,18 @@ These do not affect any scientific claim in the paper.
   training is not regression-tested against a frozen expectation. It is
   verified against the released predictions instead.
 
+- **Only the metadata-only router has a published checkpoint.** The main
+  text+metadata router and the six-setting variants were not serialized at
+  training time; their per-problem predictions, hyperparameter searches and
+  metrics are released, and the training code reproduces them, but there is no
+  saved estimator to download. Re-fitting and publishing those checkpoints is
+  straightforward and not yet done.
+
+- The published checkpoint is a scikit-learn pickle fitted under 1.8.0. It emits
+  `InconsistentVersionWarning` on other versions, and `predict_proba` raises on
+  at least 1.6.1 while `predict` works. A version-independent format (skops, or
+  exported coefficients) would be a more durable artifact.
+
 - Expand the fixture suite so more of the analysis path is covered without a
   data download.
 

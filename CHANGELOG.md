@@ -25,6 +25,9 @@ Protocol Pays Off: Cost-Aware Protocol Routing Across Reasoning Tasks*
 - Protocol execution code with configurable OpenAI-compatible providers and a
   deterministic mock backend for offline end-to-end runs.
 - Provenance records mapping every paper claim to its source artifact.
+- The trained metadata-only router checkpoint, with its fitted feature builders,
+  an explicitly verified label map, held-out predictions, and a runnable
+  offline example.
 - Project website and full reproduction guide.
 
 ### Verified at release
