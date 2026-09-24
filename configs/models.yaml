@@ -1,0 +1,95 @@
+# Model identifiers as they appear in run metadata and execution configs.
+#
+# PROVENANCE. Every `model` / `model_endpoint` string below was read out of a
+# released artifact or an execution config in the AgentVerse research
+# repository. Fields that could not be established from source are marked
+# `verified: false` with a note saying what was searched.
+#
+# Nothing here is a credential, an endpoint URL, or an auth token. Reproducing
+# the OFFLINE analyses needs none of this; it is recorded so a reader can tell
+# which model produced which released outcome.
+
+solvers:
+  gpt_oss_120b:
+    model_endpoint: openai/gpt-oss-120b
+    display_name: gpt-oss-120b
+    run_id: gpt_oss_120b
+    verified: true
+    source: >-
+      model_endpoint column of every matched-label table; configs/paper/*/config.yaml
+    settings_used_in: [OmniMath, JEEBench, SciBench, LAB-Bench strict, LAB-Bench text-no-tool]
+
+  gemma_4_31b:
+    model_endpoint: google/gemma-4-31B-it
+    display_name: Gemma-4-31B-it
+    run_id: gemma_4_31b
+    verified: true
+    source: >-
+      model_endpoint column of every matched-label table;
+      configs/paper/lab_bench/*/gemma4_31b_eval_oss120b/*/config.yaml
+    settings_used_in: [OmniMath, JEEBench, SciBench, LAB-Bench strict, LAB-Bench text-no-tool]
+
+non_paper_solvers:
+  # Present in the released extract but EXCLUDED from every paper table.
+  gemma3_27b:
+    model_endpoint: google/gemma-3-27b-it
+    display_name: Gemma-3-27B-it
+    verified: true
+    source: model_endpoint column of omnimath2__tier_sampled_833__gemma3_27b.csv
+    excluded_because: >-
+      A tier-sampled 833-problem OmniMath slice, not one of the 10 paper settings.
+
+evaluator:
+  # The evaluator that judges every protocol's final answer.
+  model_endpoint: openai/gpt-oss-120b
+  verified: true
+  constant_across_solvers: true
+  constant_across_solvers_detail: >-
+    In the Gemma actor configs the three deliberators / solver run
+    google/gemma-4-31B-it while the evaluator stays openai/gpt-oss-120b, so the
+    judge is held fixed across solver families.
+  source: >-
+    configs/paper/lab_bench/llm_strict/gemma4_31b_eval_oss120b/baseline_llm/config.yaml:26,43
+    (actor google/gemma-4-31B-it, evaluator openai/gpt-oss-120b)
+
+decoding:
+  temperature: 0
+  max_tokens: 4096
+  verified: true
+  source: configs/paper/{baseline_llm,single_agent_hint_llm,per_hint_llm,broadcast_hint_llm}/config.yaml
+  caveat: >-
+    temperature 0 is requested, not guaranteed. Served models can still return
+    different text for byte-identical inputs. The bootstrap intervals in this
+    package are problem-sampling intervals and do NOT cover that variability.
+
+llm_type_alias:
+  value: gpt-3.5-turbo
+  is_the_served_model: false
+  note: >-
+    Every config sets `llm_type: gpt-3.5-turbo`. This is an AgentVerse REGISTRY
+    ALIAS selecting the OpenAI-compatible client class, NOT the model that
+    served the request. The served model is the `model:` field. Reading
+    llm_type as the solver would be wrong.
+  source: configs/paper/*/config.yaml (llm_type and model appear on adjacent lines)
+
+confidence_probe:
+  # The post-answer self-confidence elicitation. Requires inference; not
+  # reproducible offline.
+  temperature: 0.0
+  max_tokens: 256
+  max_retries: 4
+  timeout_seconds: 180.0
+  verified: true
+  source: >-
+    the per-setting run_manifest.json emitted by each released confidence-probe
+    run (one manifest per setting, alongside that run's outputs)
+
+serving_infrastructure:
+  verified: false
+  note: >-
+    The probe run manifests record output paths on a cluster filesystem, which
+    tells us the runs were executed on a cluster but not which serving stack or
+    hardware answered each request. Searched: run_manifest.json of every probe run,
+    configs/paper/*/config.yaml, and the AgentVerse LLM client module. No
+    serving-stack identifier is recorded in any released artifact.
+  unknown: true

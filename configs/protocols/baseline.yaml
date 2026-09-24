@@ -1,0 +1,135 @@
+# Baseline protocol -- direct one-shot answer.
+#
+# PROVENANCE. Every field below is transcribed from the execution configs and
+# code in the AgentVerse research repository that produced the released
+# outcomes. Field-level sources are given as `source:` keys using
+# repository-relative paths. Nothing here is inferred from behaviour or filled
+# in from a plausible default; fields that could not be established from source
+# carry `unknown: true` and name what was searched.
+#
+# THIS FILE DOES NOT EXECUTE ANYTHING. protocol_routing is the OFFLINE analysis
+# half of the pipeline. Running this protocol requires an LLM endpoint and the
+# AgentVerse execution stack; see README "Inference-requiring steps".
+
+protocol_id: baseline_llm
+display_name: Baseline
+description: >-
+  A single solver call answers the problem directly, followed by one evaluator
+  call that judges correctness. There is no revision, no feedback loop and no
+  second agent.
+
+source_config: configs/paper/baseline_llm/config.yaml
+source_header_comment: "One-shot direct baseline: one solver call, one evaluator call, judge-only."
+
+roles:
+  - name: Solo
+    agent_type: solver
+    role_description: BaselineLLM
+    max_retry: 10
+    memory_type: chat_history
+    output_parser: dummy
+    source: configs/paper/baseline_llm/config.yaml:79-94
+  - name: Evaluator
+    agent_type: evaluator
+    role_description: Evaluator
+    max_retry: 10
+    memory_type: chat_history
+    output_parser: mgsm-evaluator
+    source: configs/paper/baseline_llm/config.yaml:96-113
+
+environment:
+  env_type: task-single-llm-benchmark
+  max_rounds: 1
+  source: configs/paper/baseline_llm/config.yaml:4,68-76
+
+turns:
+  max_rounds: 1
+  inner_rounds: null   # not applicable: this environment has no inner loop
+  source: configs/paper/baseline_llm/config.yaml:4
+
+stopping_rule:
+  rule: "success OR cnt_turn >= max_rounds"
+  effective_behaviour: >-
+    With max_rounds=1 the loop executes exactly one round unconditionally. The
+    evaluator verdict determines pass/fail but cannot trigger another attempt.
+  implementation: agentverse/environments/tasksolving_env/single_llm_benchmark.py:60-61
+  driver_loop: agentverse/tasksolving.py:270-274
+
+retry_policy:
+  agent_level:
+    max_retry: 10
+    scope: "parse failure or any exception from the LLM call"
+    on_exhaustion: >-
+      The agent does NOT raise. It emits an empty message (content="") and the
+      round proceeds. Every retry is a real billed API call and is counted in
+      token accounting.
+    source: agentverse/agents/tasksolving_agent/solver.py:71-93
+  transport_level:
+    rate_limit_max_attempts: 7      # env AGENTVERSE_RATE_LIMIT_MAX_ATTEMPTS
+    rate_limit_backoff_cap_sec: 60  # env AGENTVERSE_RATE_LIMIT_BACKOFF_CAP
+    transient_max_attempts: 4       # env AGENTVERSE_TRANSIENT_MAX_ATTEMPTS
+    transient_backoff_cap_sec: 8    # env AGENTVERSE_TRANSIENT_BACKOFF_CAP
+    counted_in_tokens: false        # a failed transport retry returns no usage object
+    source: agentverse/llms/openai.py:167-172, 751-810
+
+context_and_memory:
+  memory_type: chat_history
+  reset_between_rounds: true
+  reset_detail: >-
+    The solver and evaluator are reset at the start of every round. With
+    max_rounds=1 this is moot for Baseline.
+  full_question_history: "max_history = 0 via _enable_full_question_history"
+  source: agentverse/environments/tasksolving_env/rules/single_llm_benchmark.py:73-84
+
+final_answer_selection:
+  rule: "the solver's own output text"
+  implementation: 'final_result = submitted_text.strip() or "[No solver output]"'
+  voting: false
+  source: agentverse/environments/tasksolving_env/rules/single_llm_benchmark.py:226
+
+evaluator_invocation:
+  type: llm
+  class: LlmPerEvaluator
+  stateless: true                  # astep(..., use_memory=False)
+  boxed_answer_precheck: >-
+    If no \boxed{} answer is present the evaluator is NOT called: the submission
+    is a hard FAIL with reason "missing_boxed_final_answer".
+  hint_call_on_fail: false
+  hint_call_detail: >-
+    Baseline is judge-only and passes include_hint_on_fail=False, so a FAIL
+    costs one evaluator call, not two. The config's reviewer_feedback_mode is
+    "plain" because the solver prompt has no ${advice} slot to consume feedback.
+  verdict_parser: "mgsm-evaluator; regex Correctness:\\s*(\\d)"
+  source:
+    - agentverse/environments/tasksolving_env/rules/evaluator/per.py:451-455, 170-207, 510-516
+    - agentverse/environments/tasksolving_env/rules/single_llm_benchmark.py:41-44, 142
+    - agentverse/output_parser/output_parser.py:515-546
+
+token_accounting:
+  primitive: >-
+    total_prompt_tokens and total_completion_tokens accumulate the API response's
+    usage.prompt_tokens / usage.completion_tokens per LLM instance.
+  memory_summarizer_tokens: "counted separately and added in (not used by Baseline)"
+  per_example_total: >-
+    Summed across all agents in the environment; total_model_calls is the sum of
+    each agent's total_request_count (plus summary_request_count).
+  per_example_isolation: >-
+    Counters are zeroed per example via reset_token_counters(). Runs made BEFORE
+    commit b4a2db6ee carried counters across problems within a worker and are
+    tagged legacy_worker_cumulative_metrics_before_counter_reset_fix_b4a2db6ee.
+  source:
+    - agentverse/llms/openai.py:1433-1435
+    - agentverse/metrics/collector.py:186-247
+    - agentverse/environments/base.py:94-131
+    - agentverse/tasksolving.py:320-321
+
+nominal_model_calls: 2   # 1 solver + 1 evaluator verdict, before any retries
+
+model_settings:
+  # As written in the Omni-MATH config. Other benchmark slices substitute a
+  # different actor model; see configs/models.yaml.
+  llm_type: gpt-3.5-turbo   # a registry alias, NOT the served model
+  model: openai/gpt-oss-120b
+  temperature: 0
+  max_tokens: 4096
+  source: configs/paper/baseline_llm/config.yaml:89-92, 106-109

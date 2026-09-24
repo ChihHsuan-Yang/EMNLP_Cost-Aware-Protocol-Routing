@@ -1,0 +1,11 @@
+solver,setting,n,baseline_pct,single_pct,per_pct,broadcast_pct,oracle_pct
+gpt-oss-120b,OmniMath,4181,56.83,78.78,85.17,89.21,92.68
+gpt-oss-120b,JEEBench,515,41.55,55.34,91.46,94.95,96.50
+gpt-oss-120b,SciBench,565,62.12,72.21,87.43,89.73,91.15
+gpt-oss-120b,LAB-Bench strict,741,19.03,30.23,47.64,74.22,77.33
+gpt-oss-120b,LAB-Bench text-no-tool,1542,30.54,55.64,59.27,81.26,86.38
+Gemma-4-31B-it,OmniMath,4181,69.39,85.94,90.65,92.99,95.67
+Gemma-4-31B-it,JEEBench,515,70.49,81.36,95.92,98.25,99.22
+Gemma-4-31B-it,SciBench,565,70.27,79.29,91.33,88.67,93.45
+Gemma-4-31B-it,LAB-Bench strict,741,44.40,58.16,69.37,89.34,90.55
+Gemma-4-31B-it,LAB-Bench text-no-tool,1542,41.96,74.77,85.02,91.05,96.37

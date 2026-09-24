@@ -1,0 +1,136 @@
+# Single protocol -- iterative self-correction by one agent.
+#
+# PROVENANCE. Transcribed from the AgentVerse execution configs and code that
+# produced the released outcomes; `source:` keys give repository-relative
+# paths. Nothing is inferred. Unestablished fields carry `unknown: true`.
+#
+# THIS FILE DOES NOT EXECUTE ANYTHING (offline analysis package).
+
+protocol_id: single_agent
+display_name: Single
+description: >-
+  One solver attempts the problem, an LLM evaluator judges it, and on failure
+  the solver retries with the evaluator's repair hint and a structured record of
+  what it already tried. Up to three attempts.
+
+source_config: configs/paper/single_agent_hint_llm/config.yaml
+source_header_comment: >-
+  Hint-feedback variant: same evaluator contract, outer-loop retry, and
+  structured question-scoped memory without reviewer-style self-critique.
+
+roles:
+  - name: Solo
+    agent_type: solver
+    role_description: SingleAgentIterative
+    max_retry: 10
+    output_parser: dummy
+    prompt_variants:
+      first_attempt: "no feedback placeholders"
+      retry: "carries ${former_solution} and ${advice}"
+    source: configs/paper/single_agent_hint_llm/config.yaml:8-69, 116-133
+  - name: Evaluator
+    agent_type: evaluator
+    role_description: Evaluator
+    max_retry: 10
+    output_parser: mgsm-evaluator
+    source: configs/paper/single_agent_hint_llm/config.yaml:135-150
+
+environment:
+  env_type: task-single-agent-reflect
+  max_rounds: 3
+  reset_solver_memory_each_attempt: true
+  reviewer_feedback_mode: hint
+  source: configs/paper/single_agent_hint_llm/config.yaml:5, 104-113
+
+turns:
+  max_rounds: 3
+  inner_rounds: null   # not applicable
+  source: configs/paper/single_agent_hint_llm/config.yaml:5
+
+stopping_rule:
+  rule: "success OR cnt_turn >= max_rounds"
+  effective_behaviour: >-
+    Terminates as soon as the evaluator returns PASS; otherwise after 3 attempts.
+  implementation: agentverse/environments/tasksolving_env/single_agent_reflect.py:60-61
+  round_body: >-
+    One solver call then one evaluator call per round.
+  round_body_source: agentverse/environments/tasksolving_env/rules/single_agent_reflect.py:203-218, 269-283
+
+retry_policy:
+  agent_level:
+    max_retry: 10
+    scope: "parse failure or any exception from the LLM call"
+    on_exhaustion: "emits an empty message; the evaluator falls back to score=0, advice=''"
+    source: agentverse/agents/tasksolving_agent/solver.py:71-93, agentverse/agents/tasksolving_agent/evaluator.py:85, 104-108
+  transport_level:
+    rate_limit_max_attempts: 7
+    rate_limit_backoff_cap_sec: 60
+    transient_max_attempts: 4
+    transient_backoff_cap_sec: 8
+    counted_in_tokens: false
+    source: agentverse/llms/openai.py:167-172, 751-810
+  note: >-
+    Do not confuse these with max_rounds. max_retry is a within-call parse/error
+    retry; max_rounds is the protocol's revision loop.
+
+context_and_memory:
+  memory_type: chat_history
+  reset_between_rounds: true
+  reset_detail: >-
+    The solver's chat history IS reset before every attempt
+    (reset_solver_memory_each_attempt: true, and the rule default is also True).
+    The evaluator is reset each round too. Continuity across attempts is carried
+    ONLY through structured ledgers injected as ${advice}, never through chat
+    history.
+  ledgers:
+    failed_attempt_memory_limit: 3
+    candidate_revision_memory_limit: 5
+    note: "rule defaults; the Single config does not override them"
+    source: agentverse/environments/tasksolving_env/rules/single_agent_reflect.py:85-94
+  advice_composition: >-
+    "Latest Evaluator Feedback From The Previous Attempt" + CandidateRevisionMemory
+    + FailedAttemptMemory, rendered into the ${advice} slot.
+  first_attempt_detection: >-
+    is_first_attempt = no former_solution AND no advice AND both ledgers empty.
+  source: agentverse/environments/tasksolving_env/rules/single_agent_reflect.py:107-119, 182-201
+
+final_answer_selection:
+  rule: "the solver's own last output (current_candidate)"
+  voting: false
+  source: agentverse/environments/tasksolving_env/rules/single_agent_reflect.py:415-418
+
+evaluator_invocation:
+  type: llm
+  class: LlmPerEvaluator
+  stateless: true
+  boxed_answer_precheck: >-
+    Missing \boxed{} short-circuits to FAIL without an LLM call
+    (reason "missing_boxed_final_answer").
+  hint_call_on_fail: true
+  hint_call_detail: >-
+    include_hint_on_fail defaults to True here, so a FAILING attempt costs TWO
+    evaluator calls: the verdict, then a repair hint. The hint prompt is told the
+    verdict is already fixed ("Do NOT change or reconsider the correctness verdict").
+  feedback_mode: hint
+  source:
+    - agentverse/environments/tasksolving_env/rules/evaluator/per.py:451-455, 170-207, 479, 510-516, 529-559
+    - agentverse/environments/tasksolving_env/rules/per.py:485-517
+
+token_accounting:
+  primitive: "usage.prompt_tokens / usage.completion_tokens accumulated per LLM instance"
+  memory_summarizer_tokens: "counted separately and added in (not used by Single)"
+  per_example_total: "summed across agents; model calls = sum of total_request_count"
+  per_example_isolation: "reset_token_counters() per example; see commit b4a2db6ee note in baseline.yaml"
+  source:
+    - agentverse/llms/openai.py:1433-1435
+    - agentverse/metrics/collector.py:186-247
+    - agentverse/environments/base.py:94-131
+
+nominal_model_calls: "up to 3 x (1 solver + 1 or 2 evaluator calls), before retries"
+
+model_settings:
+  llm_type: gpt-3.5-turbo   # registry alias, NOT the served model
+  model: openai/gpt-oss-120b
+  temperature: 0
+  max_tokens: 4096
+  source: configs/paper/single_agent_hint_llm/config.yaml:128-131, 145-148

@@ -1,0 +1,25 @@
+solver,setting,target,n_parseable,positive_n,prevalence,auroc,auprc
+Gemma-4-31B-it,OmniMath,Baseline failure,4178,1279,0.3061,0.8012,0.5871
+Gemma-4-31B-it,OmniMath,Any collaboration improves over Baseline,4178,1098,0.2628,0.7828,0.5057
+Gemma-4-31B-it,OmniMath,PER first success,4178,268,0.0641,0.7290,0.1255
+Gemma-4-31B-it,OmniMath,Broadcast-only success,4178,120,0.0287,0.7389,0.0626
+gpt-oss-120b,OmniMath,Baseline failure,4151,1802,0.4341,0.8847,0.8950
+gpt-oss-120b,OmniMath,Any collaboration improves over Baseline,4151,1496,0.3604,0.8544,0.7683
+gpt-oss-120b,OmniMath,PER first success,4151,365,0.0879,0.7259,0.1674
+gpt-oss-120b,OmniMath,Broadcast-only success,4151,175,0.0422,0.7639,0.1041
+Gemma-4-31B-it,LAB-Bench strict,Baseline failure,733,409,0.5580,0.8637,0.8692
+Gemma-4-31B-it,LAB-Bench strict,Any collaboration improves over Baseline,733,340,0.4638,0.7771,0.7297
+Gemma-4-31B-it,LAB-Bench strict,PER first success,733,85,0.1160,0.6932,0.2186
+Gemma-4-31B-it,LAB-Bench strict,Broadcast-only success,733,138,0.1883,0.7875,0.3370
+gpt-oss-120b,LAB-Bench strict,Baseline failure,719,589,0.8192,0.5814,0.9040
+gpt-oss-120b,LAB-Bench strict,Any collaboration improves over Baseline,719,424,0.5897,0.5611,0.6589
+gpt-oss-120b,LAB-Bench strict,PER first success,719,152,0.2114,0.5589,0.2528
+gpt-oss-120b,LAB-Bench strict,Broadcast-only success,719,171,0.2378,0.5344,0.2979
+Gemma-4-31B-it,LAB-Bench text-no-tool,Baseline failure,1542,895,0.5804,0.7337,0.8204
+Gemma-4-31B-it,LAB-Bench text-no-tool,Any collaboration improves over Baseline,1542,839,0.5441,0.6764,0.7086
+Gemma-4-31B-it,LAB-Bench text-no-tool,PER first success,1542,167,0.1083,0.6902,0.2054
+Gemma-4-31B-it,LAB-Bench text-no-tool,Broadcast-only success,1542,147,0.0953,0.8737,0.3195
+gpt-oss-120b,LAB-Bench text-no-tool,Baseline failure,1510,1062,0.7033,0.6069,0.8363
+gpt-oss-120b,LAB-Bench text-no-tool,Any collaboration improves over Baseline,1510,854,0.5656,0.5694,0.6282
+gpt-oss-120b,LAB-Bench text-no-tool,PER first success,1510,190,0.1258,0.5541,0.1630
+gpt-oss-120b,LAB-Bench text-no-tool,Broadcast-only success,1510,251,0.1662,0.5684,0.2664

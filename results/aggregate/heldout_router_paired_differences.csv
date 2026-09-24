@@ -1,0 +1,7 @@
+solver,setting,n,router_minus_tier_majority_points,router_minus_tier_majority_ci_points,router_minus_baseline_points,router_minus_baseline_ci_points
+Gemma-4-31B-it,OmniMath,628,7.2,"[4.0,10.2]",7.2,"[4.0,10.2]"
+gpt-oss-120b,OmniMath,628,3.3,"[0.0,6.5]",9.9,"[6.5,13.2]"
+Gemma-4-31B-it,LAB-Bench strict,112,25.0,"[16.1,33.9]",25.9,"[17.9,34.0]"
+gpt-oss-120b,LAB-Bench strict,112,-8.0,"[-17.0,1.8]",37.5,"[28.6,46.4]"
+Gemma-4-31B-it,LAB-Bench text-no-tool,232,10.8,"[5.2,16.4]",35.8,"[29.7,42.2]"
+gpt-oss-120b,LAB-Bench text-no-tool,232,0.9,"[-5.2,6.5]",26.7,"[20.7,32.8]"
