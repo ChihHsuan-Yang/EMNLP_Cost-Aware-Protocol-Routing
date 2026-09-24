@@ -165,6 +165,7 @@ paper/        the paper PDF and citation
 
 ## Documentation
 
+- [**Release artifacts**](docs/RELEASE_ARTIFACTS.md) — every public URL and the pinned revision to cite
 - [Protocol definitions](docs/protocol_definitions.md) — every term defined for a first-time reader
 - [Data schema](docs/data_schema.md) — every column in every released table
 - [Reproduction](docs/reproduction.md) — what reproduces offline, and what does not

@@ -261,16 +261,18 @@
   <h3>The probe cannot cheat</h3>
   <p>After <code>gpt-oss-120b</code> produces its Baseline answer, we ask it for P(Baseline correct). The probe sees only the problem, the allowed metadata, and its own Baseline <em>final answer</em>. It sees no reasoning trace, no gold answer, no correctness label, no oracle label, and no collaboration outcome. Failure risk is then 1&nbsp;&minus;&nbsp;P(correct).</p>
 
-  <figure>
+  <div class="figpair">
+    <figure>
     <a class="figzoom" href="assets/img/fig3a_reliability.png" target="_blank" rel="noopener" title="Open the full-resolution figure (1849×1609) in a new tab"><img src="assets/img/fig3a_reliability@1x.png" srcset="assets/img/fig3a_reliability@1x.png 1x, assets/img/fig3a_reliability@2x.png 2x" width="700" height="609"
          alt="Reliability diagram comparing self-reported single-pass confidence on the horizontal axis with empirical Baseline success rate on the vertical axis, plotted against a diagonal line of perfect calibration." loading="lazy" decoding="async"></a>
     <figcaption><b>Self-assessment reliability.</b> Self-reported single-pass confidence compared with empirical Baseline success, for the cleaned pre-answer confidence probe (<code>fig3a_reliability</code>).</figcaption>
   </figure>
-  <figure>
+    <figure>
     <a class="figzoom" href="assets/img/fig3b_oracle_by_confidence.png" target="_blank" rel="noopener" title="Open the full-resolution figure (1946×1927) in a new tab"><img src="assets/img/fig3b_oracle_by_confidence@1x.png" srcset="assets/img/fig3b_oracle_by_confidence@1x.png 1x, assets/img/fig3b_oracle_by_confidence@2x.png 2x" width="700" height="693"
          alt="Stacked bar chart showing the distribution of fixed-order-oracle routing labels within each bin of self-reported confidence; the Baseline share dominates high-confidence bins while costlier-protocol and None labels concentrate in low-confidence bins." loading="lazy" decoding="async"></a>
     <figcaption><b>Oracle labels by confidence bin.</b> Fixed-order-oracle routing labels within confidence bins (<code>fig3b_oracle_by_confidence</code>). Confidence separates &ldquo;Baseline is enough&rdquo; from &ldquo;something more is needed&rdquo;, but within the low-confidence region the costlier labels remain mixed &mdash; which is the selection problem the paper leaves open.</figcaption>
   </figure>
+  </div>
 </section>
 
 <section id="results" class="wrap" aria-labelledby="h-results">

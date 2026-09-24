@@ -453,3 +453,47 @@ a.figzoom:focus-visible::after { text-decoration: underline; }
     border-radius: 4px;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Figure sizing and pairing.
+
+   Two problems this solves. First, the two confidence figures are near-square
+   (1849x1609 and 1946x1927), so at full content width each rendered ~900-1030px
+   tall -- one figure filling an entire laptop viewport, with the caption pushed
+   off-screen. Second, they are the only two figures that belong to the SAME
+   narrative section, so pairing them is meaningful rather than decorative;
+   fig1 and fig2 stand alone in their own sections and stay full width.
+   --------------------------------------------------------------------------- */
+.figpair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  align-items: start;
+  margin-block: 18px;
+}
+.figpair figure { margin: 0; }
+
+/* A hard ceiling so no single figure can dominate the fold, whatever its
+   intrinsic aspect ratio. object-fit keeps the whole plot visible rather than
+   cropping it -- a cropped chart is worse than a small one. */
+.figpair img {
+  max-height: 60vh;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+/* Full-width figures get a ceiling too, but a taller one: they are wide and
+   short, so they were never the problem. */
+main figure > a.figzoom > img,
+main figure > img {
+  max-height: 78vh;
+  object-fit: contain;
+}
+
+@media (max-width: 860px) {
+  /* Stack rather than squeeze: two half-width charts on a phone are unreadable
+     in a way that one full-width chart is not. */
+  .figpair { grid-template-columns: 1fr; gap: 14px; }
+  .figpair img { max-height: none; }
+}
