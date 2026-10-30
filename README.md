@@ -2,11 +2,11 @@
 
 ### Cost-Aware Protocol Routing Across Reasoning Tasks
 
-**EMNLP 2026 Accepted Paper**
+**Published in Findings of EMNLP 2026 · pp. 26995–27016**
 
 [![Project page](https://img.shields.io/badge/Project-Page-1f6f8b)](https://chihhsuan-yang.github.io/EMNLP_Cost-Aware-Protocol-Routing/)
-[![arXiv](https://img.shields.io/badge/arXiv-2608.14927-b31b1b)](https://arxiv.org/abs/2608.14927)
-[![PDF](https://img.shields.io/badge/Paper-PDF-333333)](https://arxiv.org/pdf/2608.14927)
+[![ACL Anthology](https://img.shields.io/badge/ACL_Anthology-EMNLP_2026-1f6f8b)](https://aclanthology.org/2026.findings-emnlp.1275/)
+[![PDF](https://img.shields.io/badge/Paper-PDF-333333)](https://aclanthology.org/2026.findings-emnlp.1275.pdf)
 [![HF dataset](https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-Card-ffcc4d)](https://huggingface.co/datasets/AgentsSci/EMNLP_Cost-Aware-Protocol-Routing)
 [![HF model](https://img.shields.io/badge/%F0%9F%A4%97%20Model-Card-ffcc4d)](https://huggingface.co/AgentsSci/EMNLP_Cost-Aware-Protocol-Routing)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
@@ -175,22 +175,33 @@ paper/        the paper PDF and citation
 ## Citation
 
 ```bibtex
-@article{yang2026protocolrouting,
-  title  = {{LLMs Can Predict Failure Risk, But Struggle to Predict Which
-            Collaboration Protocol Pays Off: Cost-Aware Protocol Routing
-            Across Reasoning Tasks}},
-  author = {Yang, Chih-Hsuan and Jiang, Jingyan and Yang, Cheng-Hau and
-            Vasudevan, Vikram and Zheng, Huihuo and Vishwanath, Venkatram and
-            Thakur, Rajeev},
-  journal = {arXiv preprint arXiv:2608.14927},
-  year    = {2026},
-  note    = {To appear at EMNLP 2026},
-  url     = {https://arxiv.org/abs/2608.14927}
+@inproceedings{yang-etal-2026-llms-predict,
+    title = "{LLM}s Can Predict Failure Risk, But Struggle to Predict Which Collaboration Protocol Pays Off: Cost-Aware Protocol Routing Across Reasoning Tasks",
+    author = "Yang, Chih-Hsuan  and
+      Jiang, Jingyan  and
+      Yang, Cheng-Hau  and
+      Vasudevan, Vikram  and
+      Zheng, Huihuo  and
+      Vishwanath, Venkatram  and
+      Thakur, Rajeev",
+    editor = "Lee, Hung-Yi  and
+      Dev, Sunipa  and
+      Li, Jessy  and
+      Elliott, Desmond",
+    booktitle = "Findings of the {A}ssociation for {C}omputational {L}inguistics: {EMNLP} 2026",
+    month = oct,
+    year = "2026",
+    address = "Budapest, Hungary",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2026.findings-emnlp.1275/",
+    doi = "10.18653/2026.findings-emnlp.1275",
+    pages = "26995--27016",
+    ISBN = "979-8-89176-462-0"
 }
 ```
 
-The official EMNLP 2026 proceedings entry will be added once the proceedings
-record exists.
+Published in *Findings of the Association for Computational Linguistics: EMNLP 2026*, pages 26995–27016.
+DOI: [10.18653/2026.findings-emnlp.1275](https://doi.org/10.18653/2026.findings-emnlp.1275).
 
 ## Acknowledgments
 
@@ -210,3 +221,4 @@ under its original terms, described in [`NOTICE`](NOTICE).
 ## Contact
 
 Chih-Hsuan (Bella) Yang — bellayang@anl.gov
+

@@ -37,7 +37,7 @@ url: "https://chihhsuan-yang.github.io/EMNLP_Cost-Aware-Protocol-Routing/"
 repository-code: "https://github.com/ChihHsuan-Yang/EMNLP_Cost-Aware-Protocol-Routing"
 license: MIT
 preferred-citation:
-  type: article
+  type: conference-paper
   title: "LLMs Can Predict Failure Risk, But Struggle to Predict Which Collaboration Protocol Pays Off: Cost-Aware Protocol Routing Across Reasoning Tasks"
   authors:
     - family-names: Yang
@@ -55,5 +55,12 @@ preferred-citation:
     - family-names: Thakur
       given-names: Rajeev
   year: 2026
-  journal: "arXiv preprint arXiv:2608.14927"
-  url: "https://arxiv.org/abs/2608.14927"
+  month: 10
+  start: 26995
+  end: 27016
+  doi: "10.18653/2026.findings-emnlp.1275"
+  publisher:
+    name: "Association for Computational Linguistics"
+  collection-title: "Findings of the Association for Computational Linguistics: EMNLP 2026"
+  url: "https://aclanthology.org/2026.findings-emnlp.1275/"
+

@@ -12,14 +12,20 @@ Protocol Routing Across Reasoning Tasks*, with the revision each was verified at
 
 | Artifact | URL |
 |---|---|
-| Paper (arXiv abstract) — **cite this** | <https://arxiv.org/abs/2608.14927> |
-| Paper (PDF) | <https://arxiv.org/pdf/2608.14927> |
+| Paper (ACL Anthology) — **cite this** | <https://aclanthology.org/2026.findings-emnlp.1275/> |
+| DOI | <https://doi.org/10.18653/2026.findings-emnlp.1275> |
+| Paper (PDF) | <https://aclanthology.org/2026.findings-emnlp.1275.pdf> |
 | Code repository | <https://github.com/ChihHsuan-Yang/EMNLP_Cost-Aware-Protocol-Routing> |
 | Project website | <https://chihhsuan-yang.github.io/EMNLP_Cost-Aware-Protocol-Routing/> |
 | Dataset card | <https://huggingface.co/datasets/AgentsSci/EMNLP_Cost-Aware-Protocol-Routing> |
 | Model card (trained router) | <https://huggingface.co/AgentsSci/EMNLP_Cost-Aware-Protocol-Routing> |
 | Hugging Face collection | <https://huggingface.co/collections/AgentsSci/cost-aware-protocol-routing-emnlp-2026-6ab4a6858f76a3ef1ffc18e6> |
 | Release tag | <https://github.com/ChihHsuan-Yang/EMNLP_Cost-Aware-Protocol-Routing/releases/tag/v1.0.0> |
+
+The formal publication is *Findings of the Association for Computational Linguistics: EMNLP 2026*,
+pages 26995–27016 (October 2026). The paper links and citation metadata were
+updated on 2026-10-30; the pinned artifact revisions below remain historical
+reproduction references.
 
 ## Pinned revisions
 
@@ -77,3 +83,4 @@ reconstruction instructions.
 ## Contact
 
 Chih-Hsuan (Bella) Yang — <bellayang@anl.gov>
+
